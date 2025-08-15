@@ -1,83 +1,41 @@
-// routes/studentRoutes.js
 const express = require('express');
-const db = require('../config/db');
 const router = express.Router();
+const studentController = require('../controllers/studentController');
+const studentCourseController = require('../controllers/studentCourseController')
+const { verifyToken, verifyStudent } = require('../middleware/authMiddleware');
+const { check } = require('express-validator');
 
-// Fetch all students
-router.get('/', (req, res) => {
-    const query = 'SELECT student_id, name, email, course, department, year_of_study, total_classes, classes_attended, attendance_percentage FROM students';
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching students:', err);
-            return res.status(500).json({ error: 'Failed to fetch students' });
-        }
-        res.json(results);
-    });
-});
+// All routes now protected
+router.use(verifyToken);
+router.use(verifyStudent);
 
-// Get a specific student by student_id
-router.get('/:student_id', (req, res) => {
-    const query = 'SELECT * FROM students WHERE student_id = ?';
-    db.query(query, [req.params.student_id], (err, results) => {
-        if (err) {
-            console.error('Error fetching student:', err);
-            return res.status(500).json({ error: 'Failed to fetch student' });
-        }
-        res.json(results[0]);
-    });
-});
+// Dashboard - no need for student_id in URL
+router.get('/dashboard', studentController.getDashboard);
 
-// Add a new student
-router.post('/', (req, res) => {
-    const { student_id, name, email, course, department, year_of_study, total_classes, classes_attended } = req.body;
-    const query = 'INSERT INTO students (student_id, name, email, course, department, year_of_study, total_classes, classes_attended) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [student_id, name, email, course, department, year_of_study, total_classes, classes_attended], (err, result) => {
-        if (err) {
-            console.error('Error adding student:', err);
-            return res.status(500).json({ error: 'Failed to add student' });
-        }
-        res.status(201).json({ id: result.insertId, ...req.body });
-    });
-});
+// Sessions
+router.get('/sessions', studentController.getAvailableSessions);
+router.post('/sessions/:session_id/clock-in', studentController.clockInToSession);
 
-// Update a student
-router.put('/:student_id', (req, res) => {
-    const { name, email, course, department, year_of_study, total_classes, classes_attended } = req.body;
-    const query = 'UPDATE students SET name = ?, email = ?, course = ?, department = ?, year_of_study = ?, total_classes = ?, classes_attended = ? WHERE student_id = ?';
-    db.query(query, [name, email, course, department, year_of_study, total_classes, classes_attended, req.params.student_id], (err, result) => {
-        if (err) {
-            console.error('Error updating student:', err);
-            return res.status(500).json({ error: 'Failed to update student' });
-        }
-        res.json({ message: 'Student updated successfully' });
-    });
-});
+// Attendance
+router.get('/attendance', studentController.getAttendanceHistory);
+router.get('/courses/enrolled', studentCourseController.getStudentCourses);
 
-// Delete a student
-router.delete('/:student_id', (req, res) => {
-    const query = 'DELETE FROM students WHERE student_id = ?';
-    db.query(query, [req.params.student_id], (err, result) => {
-        if (err) {
-            console.error('Error deleting student:', err);
-            return res.status(500).json({ error: 'Failed to delete student' });
-        }
-        res.json({ message: 'Student deleted successfully' });
-    });
-});
+// Get available courses (not enrolled)
+router.get('/courses/available', studentCourseController.getAvailableCourses);
 
-router.get('/stats/department-wise', (req, res) => {
-    const query = `
-        SELECT department, COUNT(*) AS student_count
-        FROM students
-        GROUP BY department
-    `;
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching department-wise stats:', err);
-            return res.status(500).json({ error: 'Failed to fetch department-wise stats' });
-        }
-        res.json(results); // Send aggregated results
-    });
-});
+// Enroll in course
+router.post('/courses/enroll', [
+  check('course_id').isInt().withMessage('Valid course ID required')
+], studentCourseController.enrollInCourse);
+
+// Drop course
+router.delete('/drop/:course_id', studentCourseController.dropCourse);
+
+// Profile
+router.put('/profile', [
+  check('email').isEmail().withMessage('Valid email required'),
+  check('phone').isMobilePhone().withMessage('Valid phone number required'),
+  check('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], studentController.updateProfile);
 
 module.exports = router;

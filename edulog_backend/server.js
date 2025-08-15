@@ -6,20 +6,23 @@ const studentsRoutes = require('./routes/studentsRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+require('dotenv').config();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
 // Routes
 app.use('/api', authRoutes);
-app.use('/api/students', studentsRoutes);
+app.use('/api/student', studentsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/profileRoutes', profileRoutes);
 app.use('/api/reportRoutes', reportRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 // Start Server
 try {

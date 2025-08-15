@@ -1,10 +1,9 @@
 import React, { useState, useEffect} from 'react';
-import { useNavigate } from 'react-router-dom'; // Correct import
 import {
     Box, Button, TextField, Typography, Dialog, DialogActions,
-    DialogContent, DialogTitle, Table, TableBody, TableCell, Drawer,
+    DialogContent, DialogTitle, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Paper, IconButton,
-    MenuItem, Tooltip, Snackbar, Alert, List, ListItem, ListItemText,
+    MenuItem, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import { Add, Edit, Delete, Download } from '@mui/icons-material';
 import axios from 'axios';
@@ -24,7 +23,6 @@ const StudentManagement = () => {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
     const [drawerOpen, setDrawerOpen] = React.useState(false);
-    const navigate = useNavigate(); // Initialize useNavigate
 
     useEffect(() => {
         fetchStudents();
@@ -178,41 +176,15 @@ const StudentManagement = () => {
         a.download = 'students_data.csv';
         a.click();
     };
-
-    const handleNavigation = (path) => {
-      setDrawerOpen(false);
-      navigate(path);
-    };
   
     const toggleDrawer = () => {
       setDrawerOpen(!drawerOpen);
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-    <AppBarComponent toggleDrawer={toggleDrawer} />
-    <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List>
-          <ListItem button onClick={() => handleNavigation('/adminHome')}>
-            <ListItemText primary="Dashboard" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/attendance')}>
-            <ListItemText primary="Attendance Records" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/studentsManagement')}>
-            <ListItemText primary="Students" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/reports')}>
-            <ListItemText primary="Reports" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/calendarPage')}>
-            <ListItemText primary="Calendar" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/')}>
-            <ListItemText primary="Logout" />
-          </ListItem>
-        </List>
-      </Drawer>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
+
     <Box sx={{ p: 10 }}>
             <Typography variant="h4" sx={{ mb: 3 }}>Student Management</Typography>
 

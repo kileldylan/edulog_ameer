@@ -18,6 +18,7 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
+import AppBarComponent from './CustomAppBar';
 
 const ReportsPage = () => {
   const [startDate, setStartDate] = useState(null);
@@ -27,6 +28,7 @@ const ReportsPage = () => {
   const [studentNameFilter, setStudentNameFilter] = useState('');
   const [reportsData, setReportsData] = useState([]);
   const [exportData, setExportData] = useState([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Fetch reports based on filters
   const fetchReports = useCallback(async () => {
@@ -65,7 +67,14 @@ const ReportsPage = () => {
     XLSX.writeFile(workbook, 'attendance_reports.xlsx');
   };
 
+  const toggleDrawer = () => {
+  setDrawerOpen(!drawerOpen);
+  };
+
   return (
+    <>
+    <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
+  
     <Box padding={3}>
       <Typography variant="h4" gutterBottom>
         Attendance Reports
@@ -157,6 +166,7 @@ const ReportsPage = () => {
         </Table>
       </TableContainer>
     </Box>
+    </>
   );
 };
 

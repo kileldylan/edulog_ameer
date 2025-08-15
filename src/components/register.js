@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Typography, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import { TextField, Button, Box, Grid, Link, Typography, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -123,6 +123,14 @@ function Register() {
       >
         Register
       </Button>
+      <Grid item xs={12} sx={{ textAlign: 'center', mt: 1 }}>
+          <Typography variant="body2">
+              Already't have an account?
+              <Link to="/login" style={{ marginLeft: '5px', color: '#1976d2' }}>
+                  Login
+              </Link>
+          </Typography>
+      </Grid>
     </Box>
   );
 }

@@ -53,7 +53,7 @@ const ProfilePage = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBarComponent toggleDrawer={toggleDrawer} />
+      <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List>
           <ListItem button onClick={() => handleNavigation('/adminHome')}>

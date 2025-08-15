@@ -1,0 +1,220 @@
+const Teacher = require('../models/teacherModel');
+const Course = require('../models/courseModel');
+const Session = require('../models/sessionModel');
+const { validationResult } = require('express-validator');
+
+// Teacher Controllers
+exports.getAllTeachers = async (req, res) => {
+  try {
+    Teacher.getAll((err, teachers) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(teachers);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getTeacherById = async (req, res) => {
+  try {
+    Teacher.getById(req.params.teacher_id, (err, teacher) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+      res.json(teacher);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createTeacher = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Teacher.create(req.body, (err) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ error: 'Email already exists' });
+        }
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(201).json({ message: 'Teacher created successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateTeacher = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Teacher.update(req.params.teacher_id, req.body, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Teacher updated successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteTeacher = async (req, res) => {
+  try {
+    Teacher.delete(req.params.teacher_id, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Teacher deleted successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Course Controllers
+exports.getAllCourses = async (req, res) => {
+  try {
+    Course.getAll((err, courses) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(courses);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCourseById = async (req, res) => {
+  try {
+    Course.getById(req.params.course_id, (err, course) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!course) return res.status(404).json({ error: 'Course not found' });
+      res.json(course);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createCourse = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Course.create(req.body, (err) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ error: 'Course code already exists' });
+        }
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(201).json({ message: 'Course created successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateCourse = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Course.update(req.params.course_id, req.body, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Course updated successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteCourse = async (req, res) => {
+  try {
+    Course.delete(req.params.course_id, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Course deleted successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Session Controllers
+exports.getAllSessions = async (req, res) => {
+  try {
+    Session.getAll((err, sessions) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(sessions);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getSessionById = async (req, res) => {
+  try {
+    Session.getById(req.params.session_id, (err, session) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!session || session.length === 0) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      res.json(session[0]);
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createSession = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Session.create(req.body, (err, session) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ 
+        message: 'Session created successfully',
+        session 
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateSession = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    Session.update(req.params.session_id, req.body, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Session updated successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteSession = async (req, res) => {
+  try {
+    Session.delete(req.params.session_id, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Session deleted successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Grid, Drawer, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, List, ListItem, ListItemText, } from '@mui/material';
+import { Grid, Button, Dialog, DialogActions, DialogContent, 
+DialogTitle, TextField, Typography} from '@mui/material';
 import { Calendar } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css'; // Default styling for Calendar
 import { styled } from '@mui/system';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Correct import
 import AppBarComponent from './CustomAppBar';
 
 const CalendarWrapper = styled('div')({
@@ -22,7 +22,6 @@ const CalendarPage = () => {
   const [attendanceRemark, setAttendanceRemark] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
 
   // Fetch attendance data from the backend
   useEffect(() => {
@@ -82,40 +81,13 @@ const CalendarPage = () => {
     }
   };
 
-  const handleNavigation = (path) => {
-    setDrawerOpen(false);
-    navigate(path);
-  };
-
   const toggleDrawer = () => {
     setDrawerOpen(!drawerOpen);
   };
 
   return (
     <>
-    <AppBarComponent toggleDrawer={toggleDrawer} />
-    <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List>
-          <ListItem button onClick={() => handleNavigation('/adminHome')}>
-            <ListItemText primary="Dashboard" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/attendance')}>
-            <ListItemText primary="Attendance Records" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/studentsManagement')}>
-            <ListItemText primary="Students" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/reports')}>
-            <ListItemText primary="Reports" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/calendarPage')}>
-            <ListItemText primary="Calendar" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/')}>
-            <ListItemText primary="Logout" />
-          </ListItem>
-        </List>
-      </Drawer>
+    <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
     <div style={{ padding: '20px' }}>
       <Typography variant="h4" gutterBottom>Student Attendance Calendar</Typography>
       

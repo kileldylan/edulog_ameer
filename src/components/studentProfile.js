@@ -1,178 +1,173 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Card,
-  CardContent,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Snackbar,
-  Grid,
+import { 
+  Box, Typography, TextField, Button, 
+  Paper, Avatar, CircularProgress, Alert
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import HomeIcon from '@mui/icons-material/Home';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
+import { Person, Email, Phone, Lock } from '@mui/icons-material';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-
-const ProfileContainer = styled(Box)({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  padding: '2rem',
-  backgroundColor: '#f4f6f8',
-  minHeight: '100vh',
-});
-
-const ProfileField = styled(TextField)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  width: '100%',
-}));
+import { useNavigate, useParams } from 'react-router-dom';
+import StudentNavbar from './studentNavbar';
 
 const StudentProfile = () => {
-  const [profileData, setProfileData] = useState({
+  const [profile, setProfile] = useState({
     name: '',
     email: '',
+    phone: '',
+    department: '',
+    year_of_study: ''
   });
-  const [editMode, setEditMode] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
-
-  const student_id = localStorage.getItem('student_id');
+  const { student_id } = useParams();
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchProfile = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/students/${student_id}`);
-        setProfileData({
-          name: response.data.name,
-          email: response.data.email,
-        });
-      } catch (error) {
-        console.error('Failed to fetch profile data:', error);
-        setSnackbar({
-          open: true,
-          message: 'Error loading profile data',
-          severity: 'error',
-        });
+        const response = await axios.get(`http://localhost:5000/api/student/dashboard`);
+        setProfile(response.data.student);
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load profile');
+        console.error('Profile error:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchProfileData();
+    fetchProfile();
   }, [student_id]);
 
-  const handleEditToggle = () => setEditMode(!editMode);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData((prevData) => ({ ...prevData, [name]: value }));
-  };
-
-  const handleSave = async () => {
+  // For updating profile
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const response = await axios.put(`http://localhost:5000/api/students/${student_id}`, profileData);
-      if (response.status === 200) {
-        setSnackbar({
-          open: true,
-          message: 'Profile updated successfully',
-          severity: 'success',
-        });
-        setEditMode(false);
-      }
-    } catch (error) {
-      console.error('Failed to save profile data:', error);
-      setSnackbar({
-        open: true,
-        message: 'Error saving profile data',
-        severity: 'error',
+      await axios.put(`http://localhost:5000/api/student/profile/${student_id}`, {
+        email: profile.email,
+        phone: profile.phone,
+        password: password || undefined
       });
+      setSuccess('Profile updated successfully');
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update profile');
+      setSuccess(null);
     }
   };
 
-  const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }));
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <ProfileContainer>
-      <AppBar position="fixed">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Profile
-          </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/studentHome')}>
-            <HomeIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <>
+      <StudentNavbar />
+      <Box sx={{ p: 3, mt: 8 }}>
+        <Typography variant="h4" gutterBottom>
+          My Profile
+        </Typography>
+        
+        <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <Avatar sx={{ width: 100, height: 100, fontSize: 40 }}>
+              {profile.name?.charAt(0) || 'S'}
+            </Avatar>
+          </Box>
 
-      <Card sx={{ maxWidth: 600, width: '100%', mt: 8 }}>
-        <CardContent>
-          <Typography variant="h5" align="center" gutterBottom>
-            {editMode ? 'Edit Profile' : 'Your Profile'}
-          </Typography>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-          <ProfileField
-            name="name"
-            label="Full Name"
-            variant="outlined"
-            value={profileData.name}
-            onChange={handleInputChange}
-            disabled={!editMode}
-          />
-
-          <ProfileField
-            name="email"
-            label="Email"
-            variant="outlined"
-            value={profileData.email}
-            onChange={handleInputChange}
-            disabled={!editMode}
-          />
-
-          <Grid container spacing={2} justifyContent="center">
-            <Grid item>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={editMode ? <SaveIcon /> : <EditIcon />}
-                onClick={editMode ? handleSave : handleEditToggle}
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Name"
+              value={profile.name || ''}
+              disabled
+              InputProps={{
+                startAdornment: <Person sx={{ mr: 1 }} />
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Email"
+              type="email"
+              value={profile.email || ''}
+              onChange={(e) => setProfile({...profile, email: e.target.value})}
+              required
+              InputProps={{
+                startAdornment: <Email sx={{ mr: 1 }} />
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Phone"
+              type="tel"
+              value={profile.phone || ''}
+              onChange={(e) => setProfile({...profile, phone: e.target.value})}
+              required
+              InputProps={{
+                startAdornment: <Phone sx={{ mr: 1 }} />
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Department"
+              value={profile.department || ''}
+              disabled
+            />
+            
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Year of Study"
+              value={profile.year_of_study || ''}
+              disabled
+            />
+            
+            <TextField
+              fullWidth
+              margin="normal"
+              label="New Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              InputProps={{
+                startAdornment: <Lock sx={{ mr: 1 }} />
+              }}
+              helperText="Leave blank to keep current password"
+            />
+            
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button 
+                variant="contained" 
+                type="submit"
+                sx={{ mr: 2 }}
               >
-                {editMode ? 'Save' : 'Edit Profile'}
+                Save Changes
               </Button>
-            </Grid>
-            {editMode && (
-              <Grid item>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={handleEditToggle}
-                >
-                  Cancel
-                </Button>
-              </Grid>
-            )}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={2000}
-        onClose={handleSnackbarClose}
-        message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        ContentProps={{
-          'aria-describedby': 'message-id',
-          style: { backgroundColor: snackbar.severity === 'success' ? '#4caf50' : '#f44336' },
-        }}
-      />
-    </ProfileContainer>
+              <Button 
+                variant="outlined"
+                onClick={() => navigate(`/student/dashboard/${student_id}`)}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </form>
+        </Paper>
+      </Box>
+    </>
   );
 };
 

@@ -6,14 +6,14 @@ const jwt = require('jsonwebtoken');
 exports.login = async (req, res) => {
     const { username, password } = req.body;
 
-    console.log("Login attempt:", { username, password }); // Log incoming login attempt
+    console.log("Login attempt:", { username, password });
 
     User.findByUsername(username, (err, results) => {
         if (err) {
             console.error("Database error during user lookup:", err);
             return res.status(500).json({ message: 'Server error' });
         }
-        
+
         if (results.length === 0) {
             console.log("User not found:", username);
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -28,21 +28,25 @@ exports.login = async (req, res) => {
                 console.error("Error during password comparison:", err);
                 return res.status(500).json({ message: 'Server error' });
             }
-            
+
             if (!isMatch) {
                 console.log("Password mismatch for user:", username);
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            // Password matches; generate JWT token
             console.log("Password match successful for user:", username);
-            const token = jwt.sign({ id: user.student_id, role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
 
-            // Send the response with token, role, and student_id
+            // Use secret from .env instead of hardcoding
+            const token = jwt.sign(
+                { id: user.student_id, role: user.role },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
             res.json({
                 token,
                 role: user.role,
-                student_id: user.student_id // Add student_id here
+                student_id: user.student_id
             });
         });
     });

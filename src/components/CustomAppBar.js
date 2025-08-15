@@ -1,82 +1,222 @@
 import React from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Menu, Drawer, List, ListItem, ListItemText } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Example profile icon
+import { 
+  AppBar, 
+  Toolbar, 
+  IconButton, 
+  Typography, 
+  Menu, 
+  MenuItem, 
+  Drawer, 
+  List, 
+  ListItem, 
+  ListItemIcon, 
+  ListItemText, 
+  Divider,
+  Avatar,
+  Badge
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  AccountCircle as AccountCircleIcon,
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  CalendarToday as CalendarIcon,
+  Assignment as ReportsIcon,
+  School as StudentsIcon,
+  Class as SessionsIcon,
+  ExitToApp as LogoutIcon,
+  Notifications as NotificationsIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { styled } from '@mui/material/styles';
+
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%)',
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+  zIndex: theme.zIndex.drawer + 1
+}));
 
 const AppBarComponent = ({ openDrawer, toggleDrawer }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const navigate = useNavigate(); // Initialize useNavigate for routing
+  const [notificationsAnchorEl, setNotificationsAnchorEl] = React.useState(null);
+  const navigate = useNavigate();
 
-  // Handle menu dropdown for profile/logout
-  const handleMenu = (event) => {
+  const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-    navigate('/'); // Redirect to login page
+  const handleNotificationsMenuOpen = (event) => {
+    setNotificationsAnchorEl(event.currentTarget);
   };
 
-  // Handle navigation when clicking on menu items
-  const handleNavigation = (path) => {
-    toggleDrawer(); // Close the drawer when navigating
-    navigate(path);  // Navigate to the selected path
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setNotificationsAnchorEl(null);
   };
+
+  const handleNavigation = (path) => {
+    toggleDrawer();
+    navigate(path);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    // Add logout logic here
+    navigate('/');
+  };
+
+  // Mock notifications data
+  const notifications = [
+    { id: 1, text: 'New session scheduled for tomorrow', time: '2 hours ago' },
+    { id: 2, text: '3 students pending approval', time: '1 day ago' }
+  ];
 
   return (
     <>
-      {/* AppBar */}
-      <AppBar position="sticky" style={{ background: '#333', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)' }}>
-      <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="menu" onClick={toggleDrawer}>
+      <StyledAppBar position="fixed">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="open drawer"
+            onClick={toggleDrawer}
+            sx={{ mr: 2 }}
+          >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" style={{ flexGrow: 1 }}>
-            Admin Portal
+          
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Edulog Admin Portal
           </Typography>
+          
           <div>
             <IconButton
-              edge="end"
+              size="large"
+              aria-label="show notifications"
               color="inherit"
+              onClick={handleNotificationsMenuOpen}
+              sx={{ mr: 1 }}
+            >
+              <Badge badgeContent={notifications.length} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            
+            <IconButton
+              size="large"
+              edge="end"
               aria-label="account of current user"
-              onClick={handleMenu}
+              aria-controls="primary-search-account-menu"
+              aria-haspopup="true"
+              onClick={handleProfileMenuOpen}
+              color="inherit"
             >
-            <IconButton color="inherit" onClick={() => navigate('/profile')}>
+              <Avatar sx={{ width: 32, height: 32 }} src="/path-to-user-avatar.jpg">
                 <AccountCircleIcon />
+              </Avatar>
             </IconButton>
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              keepMounted
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-            >
-            </Menu>
           </div>
         </Toolbar>
-      </AppBar>
+      </StyledAppBar>
+
+      {/* Notifications Menu */}
+      <Menu
+        anchorEl={notificationsAnchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={Boolean(notificationsAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <MenuItem key={notification.id} onClick={handleMenuClose}>
+              <ListItemText 
+                primary={notification.text} 
+                secondary={notification.time} 
+                sx={{ width: 300 }}
+              />
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem onClick={handleMenuClose}>
+            <ListItemText primary="No new notifications" />
+          </MenuItem>
+        )}
+      </Menu>
+
+      {/* Profile Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
+          <ListItemIcon>
+            <AccountCircleIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Profile</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primary="Logout" primaryTypographyProps={{ color: 'error' }} />
+        </MenuItem>
+      </Menu>
 
       {/* Side Drawer */}
       <Drawer
         anchor="left"
-        open={openDrawer} // Drawer open state controlled by parent component
-        onClose={toggleDrawer} // Close drawer when clicking outside
+        open={openDrawer}
+        onClose={toggleDrawer}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: 240,
+            boxSizing: 'border-box',
+          },
+        }}
       >
+        <Toolbar />
         <List>
-          <ListItem button={true} onClick={() => handleNavigation('/adminHome')}>
+          <ListItem button onClick={() => handleNavigation('/adminHome')}>
+            <ListItemIcon><DashboardIcon /></ListItemIcon>
             <ListItemText primary="Dashboard" />
           </ListItem>
-          <ListItem button={true} onClick={() => handleNavigation('/attendance')}>
-            <ListItemText primary="Attendance Records" />
-          </ListItem>
-          <ListItem button={true} onClick={() => handleNavigation('/studentsManagement')}>
+          
+          <ListItem button onClick={() => handleNavigation('/studentsManagement')}>
+            <ListItemIcon><StudentsIcon /></ListItemIcon>
             <ListItemText primary="Students" />
           </ListItem>
-          <ListItem button={true} onClick={() => handleNavigation('/reports')}>
+          <ListItem button onClick={() => handleNavigation('/teachers')}>
+            <ListItemIcon><ReportsIcon /></ListItemIcon>
+            <ListItemText primary="Teachers" />
+          </ListItem>
+          <ListItem button onClick={() => handleNavigation('/courses')}>
+            <ListItemIcon><ReportsIcon /></ListItemIcon>
+            <ListItemText primary="Courses" />
+          </ListItem>
+          <ListItem button onClick={() => handleNavigation('/sessionManagement')}>
+            <ListItemIcon><SessionsIcon /></ListItemIcon>
+            <ListItemText primary="Sessions" />
+          </ListItem>
+          
+          <ListItem button onClick={() => handleNavigation('/attendance')}>
+            <ListItemIcon><PeopleIcon /></ListItemIcon>
+            <ListItemText primary="Attendance" />
+          </ListItem>
+          
+          <ListItem button onClick={() => handleNavigation('/reports')}>
+            <ListItemIcon><ReportsIcon /></ListItemIcon>
             <ListItemText primary="Reports" />
           </ListItem>
-          <ListItem button={true} onClick={() => handleNavigation('/calendarPage')}>
+          
+          <ListItem button onClick={() => handleNavigation('/calendarPage')}>
+            <ListItemIcon><CalendarIcon /></ListItemIcon>
             <ListItemText primary="Calendar" />
           </ListItem>
         </List>

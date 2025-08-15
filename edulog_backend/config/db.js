@@ -4,7 +4,7 @@ const mysql = require('mysql2');
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root', // replace with your database username
-    password: '', // replace with your database password
+    password: '9923', // replace with your database password
     database: 'edulog_db' // replace with your database name
 });
 

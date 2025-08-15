@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Correct import
-import { Box, Typography, Drawer, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItem, ListItemText, Paper, IconButton, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button } from '@mui/material';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
+Paper, IconButton, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import axios from 'axios';
 import AppBarComponent from './CustomAppBar';
@@ -14,15 +14,14 @@ const AttendanceManagement = () => {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [currentAttendance, setCurrentAttendance] = useState(null);
     const [drawerOpen, setDrawerOpen] = React.useState(false);
-    const navigate = useNavigate(); // Initialize useNavigate
 
     useEffect(() => {
         fetchAttendanceRecords();
     }, []);
 
-    const fetchAttendanceRecords = async () => {
+    const fetchAttendanceRecords = async (student_id) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/attendance`);
+            const response = await axios.get(`http://localhost:5000/api/attendance/${student_id}`);
             if (Array.isArray(response.data)) {
                 setAttendanceRecords(response.data);
             } else {
@@ -90,40 +89,14 @@ const AttendanceManagement = () => {
         }));
     };
 
-    const handleNavigation = (path) => {
-      setDrawerOpen(false);
-      navigate(path);
-    };
-
     const toggleDrawer = () => {
       setDrawerOpen(!drawerOpen);
     };
 
     return (
       <>
-      <AppBarComponent toggleDrawer={toggleDrawer}/>
-      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List>
-          <ListItem button onClick={() => handleNavigation('/adminHome')}>
-            <ListItemText primary="Dashboard" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/attendance')}>
-            <ListItemText primary="Attendance Records" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/studentsManagement')}>
-            <ListItemText primary="Students" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/reports')}>
-            <ListItemText primary="Reports" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/calendarPage')}>
-            <ListItemText primary="Calendar" />
-          </ListItem>
-          <ListItem button onClick={() => handleNavigation('/')}>
-            <ListItemText primary="Logout" />
-          </ListItem>
-        </List>
-      </Drawer>
+        <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
+
         <Box sx={{ p: 10 }}>
             <Typography variant="h4" sx={{ mb: 3 }}>Attendance Records</Typography>
 

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography,
-  Drawer,
   List,
   ListItem,
   ListItemText,
-  CssBaseline,
   Container,
   Grid,
   Paper,
@@ -25,8 +23,8 @@ import {
   Legend,
 } from 'chart.js';
 import { useNavigate } from 'react-router-dom';
-import AppBarComponent from './CustomAppBar';
 import axios from 'axios';
+import AppBarComponent from './CustomAppBar';
 
 ChartJS.register(
   CategoryScale,
@@ -41,7 +39,6 @@ ChartJS.register(
 );
 
 const AdminHome = ({ onLogout }) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [totalStudents, setTotalStudents] = useState(0);
   const [attendanceToday, setAttendanceToday] = useState(0);
   const [absentStudents, setAbsentStudents] = useState(0);
@@ -49,6 +46,7 @@ const AdminHome = ({ onLogout }) => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
@@ -129,17 +127,12 @@ const AdminHome = ({ onLogout }) => {
     };
   };
 
-  const handleNavigation = (path) => {
-    setDrawerOpen(false);
-    navigate(path);
+  const handleAttendanceManagement = () => {
+    navigate('/attendance'); // Redirect to login page
   };
 
   const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  const handleAttendanceManagement = () => {
-    navigate('/attendance'); // Redirect to login page
+  setDrawerOpen(!drawerOpen);
   };
 
   const handleGenerateReports = () => {
@@ -147,33 +140,9 @@ const AdminHome = ({ onLogout }) => {
   };
 
   return (
-    <>
+  <>    
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-    <AppBarComponent toggleDrawer={toggleDrawer} />
-        <CssBaseline />
-        <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <List>
-            <ListItem button onClick={() => handleNavigation('/adminHome')}>
-              <ListItemText primary="Dashboard" />
-            </ListItem>
-            <ListItem button onClick={() => handleNavigation('/attendance')}>
-              <ListItemText primary="Attendance Records" />
-            </ListItem>
-            <ListItem button onClick={() => handleNavigation('/studentsManagement')}>
-              <ListItemText primary="Students" />
-            </ListItem>
-            <ListItem button onClick={() => handleNavigation('/reports')}>
-              <ListItemText primary="Reports" />
-            </ListItem>
-            <ListItem button onClick={() => handleNavigation('/calendarPage')}>
-              <ListItemText primary="Calendar" />
-            </ListItem>
-            <ListItem button onClick={() => handleNavigation('/')}>
-              <ListItemText primary="Logout" />
-            </ListItem>
-          </List>
-        </Drawer>
-
+        <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
         <Container style={{ marginTop: '80px' }}>
           <Typography variant="h4" gutterBottom>
             Welcome, {username}!
