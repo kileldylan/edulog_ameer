@@ -80,11 +80,13 @@ exports.getAvailableSessions = async (req, res) => {
   }
 };
 
-// Get attendance history
+//attendance history
 exports.getAttendanceHistory = async (req, res) => {
   try {
     const studentId = req.user.id;
     const { page = 1, limit = 10 } = req.query;
+
+    console.log(`Fetching attendance for student ${studentId}, page ${page}`); // Debug log
 
     const history = await dbOperation(
       Student.getAttendanceHistory, 
@@ -93,12 +95,18 @@ exports.getAttendanceHistory = async (req, res) => {
       parseInt(limit)
     );
 
+    console.log(`Found ${history.length} attendance records`); // Debug log
+
     res.json({
       success: true,
       data: history
     });
   } catch (error) {
-    console.error('Attendance History Error:', error);
+    console.error('Attendance History Error Details:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
     res.status(500).json({ 
       success: false,
       error: 'Failed to fetch attendance history',

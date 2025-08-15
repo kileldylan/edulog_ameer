@@ -29,7 +29,7 @@ router.post('/courses/enroll', [
 ], studentCourseController.enrollInCourse);
 
 // Drop course
-router.delete('/drop/:course_id', studentCourseController.dropCourse);
+router.delete('/courses/drop/:course_id', studentCourseController.dropCourse);
 
 // Profile
 router.put('/profile', [

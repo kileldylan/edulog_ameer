@@ -42,19 +42,38 @@ const Student = {
     db.query(query, [student_id], callback);
   },
 
-  // Get attendance history
-  getAttendanceHistory: (student_id, callback) => {
+  // In studentModel.js
+  getAttendanceHistory: (studentId, page = 1, limit = 10, callback) => {
+    const offset = (page - 1) * limit;
     const query = `
-      SELECT a.*, s.session_date, s.start_time, s.end_time, 
-             c.course_name, c.course_code, t.name AS teacher_name
+      SELECT 
+        a.*, 
+        s.session_date, 
+        s.start_time, 
+        s.end_time,
+        c.course_name, 
+        c.course_code,
+        t.name AS teacher_name
       FROM attendance a
       JOIN sessions s ON a.session_id = s.session_id
       JOIN courses c ON s.course_id = c.course_id
       JOIN teachers t ON s.teacher_id = t.teacher_id
       WHERE a.student_id = ?
-      ORDER BY s.session_date DESC, s.start_time DESC
+      ORDER BY s.session_date DESC
+      LIMIT ? OFFSET ?
     `;
-    db.query(query, [student_id], callback);
+    
+    // Handle both callback and promise styles
+    if (typeof callback === 'function') {
+      return db.query(query, [studentId, limit, offset], callback);
+    }
+    
+    return new Promise((resolve, reject) => {
+      db.query(query, [studentId, limit, offset], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
   },
 
   // Clock in to session
