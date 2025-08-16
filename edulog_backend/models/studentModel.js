@@ -2,15 +2,22 @@ const db = require('../config/db');
 const moment = require('moment-timezone');
 
 const Student = {
-  // Get student by ID
-  getById: (student_id, callback) => {
-    const query = 'SELECT * FROM students WHERE student_id = ?';
-    db.query(query, [student_id], (err, results) => {
+  // Get student by user ID (corrected version)
+  getByUserId: (userId, callback) => {
+    const query = `
+      SELECT s.* FROM students s
+      JOIN users u ON s.student_id = u.student_id
+      WHERE u.user_id = ?
+      LIMIT 1
+    `;
+    db.query(query, [userId], (err, results) => {
       if (err) return callback(err);
-      callback(null, results[0] || null);
+      if (!results.length) {
+        return callback(null, null); // Explicitly return null if no student found
+      }
+      callback(null, results[0]);
     });
   },
-
   // Get attendance statistics
   getAttendanceStats: (student_id, callback) => {
     const query = `

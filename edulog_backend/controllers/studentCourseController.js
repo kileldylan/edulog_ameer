@@ -23,67 +23,61 @@ const promisify = (method, ...args) => {
 
 exports.enrollInCourse = async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { course_id } = req.body;
-  const studentId = req.user.id;
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   try {
-    // 1. Verify student exists
-    const student = await promisify(Student.getById, studentId);
+    // 1. Get student via user_id
+    const student = await promisify(Student.getById, req.user.id);
     if (!student) {
-      return res.status(404).json({
+      return res.status(404).json({ 
         success: false,
-        error: 'Student not found'
+        error: 'Student profile not found' 
       });
     }
 
     // 2. Verify course exists
-    const course = await promisify(Course.getById, course_id);
+    const course = await promisify(Course.getById, req.body.course_id);
     if (!course) {
-      return res.status(404).json({
+      return res.status(404).json({ 
         success: false,
-        error: 'Course not found'
+        error: 'Course not found' 
       });
     }
 
     // 3. Check existing enrollment
-    const [isEnrolled] = await promisify(
-      StudentCourse.isEnrolled,
-      studentId,
-      course_id
+    const [enrollment] = await promisify(
+      StudentCourse.isEnrolled, 
+      student.student_id, 
+      req.body.course_id
     );
 
-    if (isEnrolled) {
-      return res.status(409).json({
+    if (enrollment) {
+      return res.status(409).json({ 
         success: false,
-        error: 'Already enrolled in this course'
+        error: 'Already enrolled in this course' 
       });
     }
 
     // 4. Create enrollment
-    await promisify(StudentCourse.enrollStudent, studentId, course_id);
+    await promisify(
+      StudentCourse.enrollStudent, 
+      student.student_id,  // Use student_id from students table
+      req.body.course_id
+    );
 
-    return res.json({
+    return res.json({ 
       success: true,
-      message: 'Successfully enrolled in course'
+      message: 'Enrollment successful',
+      studentId: student.student_id  // Return for debugging
     });
 
   } catch (error) {
-    console.error('Enrollment error:', error);
-    
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid student or course reference'
-      });
-    }
-
-    return res.status(500).json({
+    console.error('Enrollment Error:', error);
+    return res.status(500).json({ 
       success: false,
-      error: 'Failed to process enrollment'
+      error: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : 'Enrollment failed'
     });
   }
 };
@@ -128,26 +122,45 @@ exports.getAvailableCourses = async (req, res) => {
 
 exports.dropCourse = async (req, res) => {
   try {
+    // 1. Get student via user_id
+    const student = await promisify(Student.getById, req.user.id);
+    if (!student) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Student profile not found' 
+      });
+    }
+
+    // 2. Verify enrollment exists
+    const [enrollment] = await promisify(
+      StudentCourse.isEnrolled,
+      student.student_id,
+      req.params.course_id
+    );
+
+    if (!enrollment) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Enrollment record not found' 
+      });
+    }
+
+    // 3. Update status
     const result = await promisify(
       StudentCourse.updateEnrollmentStatus,
-      req.user.id,
+      student.student_id,
       req.params.course_id,
       'dropped'
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Course not found or already dropped'
-      });
-    }
-
     return res.json({ 
-      success: true, 
-      message: 'Course dropped successfully' 
+      success: true,
+      message: 'Course dropped successfully',
+      affectedRows: result.affectedRows  // For debugging
     });
+
   } catch (error) {
-    console.error('Drop Course Error:', error);
+    console.error('Drop Error:', error);
     return res.status(500).json({ 
       success: false,
       error: 'Failed to drop course'

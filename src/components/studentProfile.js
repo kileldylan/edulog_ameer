@@ -7,6 +7,8 @@ import { Person, Email, Phone, Lock } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import StudentNavbar from './studentNavbar';
+import { getToken, removeToken } from '../axios/auth';
+import axiosInstance from '../axios/axiosInstance';
 
 const StudentProfile = () => {
   const [profile, setProfile] = useState({
@@ -26,7 +28,15 @@ const StudentProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/student/dashboard`);
+        setLoading(true);
+              setError(null);
+        
+        const token = getToken();
+        if (!token) {
+          throw new Error('Authentication token missing');
+        }
+        
+        const response = await axiosInstance.get(`student/dashboard`);
         setProfile(response.data.student);
         setError(null);
       } catch (err) {
@@ -37,13 +47,13 @@ const StudentProfile = () => {
       }
     };
     fetchProfile();
-  }, [student_id]);
+  }, []);
 
   // For updating profile
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/student/profile/${student_id}`, {
+      await axiosInstance.put(`student/profile/${student_id}`, {
         email: profile.email,
         phone: profile.phone,
         password: password || undefined

@@ -41,13 +41,11 @@ const StudentCourse = {
     const query = `
       UPDATE student_courses 
       SET status = ?, updated_at = NOW()
-      WHERE student_id = ? 
-      AND course_id = ? 
-      AND status != ?
+      WHERE student_id = ? AND course_id = ?
     `;
-    db.query(query, [status, studentId, courseId, status], callback);
-  },
-
+    db.query(query, [status, studentId, courseId], callback);
+  }
+  ,
   // Check if student is enrolled in course
   isEnrolled: (studentId, courseId, callback) => {
     const query = `

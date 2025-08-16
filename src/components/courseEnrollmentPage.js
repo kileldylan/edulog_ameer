@@ -20,15 +20,15 @@ const CourseEnrollmentPage = () => {
             onChange={handleTabChange}
             variant="fullWidth"
           >
-            <Tab label="My Courses" />
-            <Tab label="Available Courses" />
+            <Tab label="Enroll Courses" />
+            <Tab label="Enrolled Courses" />
           </Tabs>
         </Paper>
         
         {tabValue === 0 ? (
-          <CourseList type="enrolled" />
-        ) : (
           <CourseList type="available" />
+        ) : (
+          <CourseList type="enrolled" />
         )}
       </Box>
     </>

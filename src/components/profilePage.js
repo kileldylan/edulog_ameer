@@ -52,19 +52,9 @@ const ProfilePage = () => {
   };
 
   return (
+    <>
+    <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
-      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List>
-          <ListItem button onClick={() => handleNavigation('/adminHome')}>
-            <ListItemText primary="Dashboard" />
-          </ListItem>
-          {/* Additional navigation items */}
-          <ListItem button onClick={() => handleNavigation('/')}>
-            <ListItemText primary="Logout" />
-          </ListItem>
-        </List>
-      </Drawer>
       <Box sx={{ paddingTop: '80px', paddingLeft: 3, paddingRight: 3 }}>
         <Grid container spacing={3}>
           {/* Profile Card */}
@@ -141,6 +131,7 @@ const ProfilePage = () => {
         </Grid>
       </Box>
     </div>
+    </>
   );
 };
 

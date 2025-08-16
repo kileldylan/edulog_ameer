@@ -13,6 +13,7 @@ import {
 import axiosInstance from '../axios/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import StudentNavbar from './studentNavbar';
+import { getToken, removeToken } from '../axios/auth';
 
 const CourseCard = ({ course, action, actionText, actionIcon, disabled }) => {
   return (
@@ -76,6 +77,7 @@ const CourseList = ({ type }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const endpoint = type === 'enrolled' 
     ? '/student/courses/enrolled' 
@@ -106,7 +108,7 @@ const fetchCourses = async () => {
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      navigate('/login?session_expired=true');
+      navigate('/');
     }
   } finally {
     setLoading(false);
@@ -120,11 +122,32 @@ const fetchCourses = async () => {
   const handleEnroll = async (courseId) => {
     try {
       setActionLoading(true);
-      await axiosInstance.post('/student/courses/enroll', { course_id: courseId });
-      setSuccess('Successfully enrolled in course!');
+      const response = await axiosInstance.post('/student/courses/enroll', { 
+        course_id: courseId 
+      });
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to enroll');
+      }
+
+      setSuccess(response.data.message || 'Successfully enrolled in course!');
       fetchCourses(); // Refresh list
+      
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to enroll');
+      console.error('Enrollment Error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+
+      const errorMessage = err.response?.status === 404
+        ? err.response.data.error || 'Student or course not found'
+        : err.response?.status === 409
+        ? err.response.data.error
+        : 'Failed to enroll. Please try again.';
+
+      setError(errorMessage);
+      
     } finally {
       setActionLoading(false);
     }
@@ -133,20 +156,44 @@ const fetchCourses = async () => {
   const handleDrop = async (courseId) => {
     try {
       setActionLoading(true);
-      await axiosInstance.delete(`/student/courses/drop/${courseId}`);
-      setSuccess('Successfully dropped course!');
+      const response = await axiosInstance.delete(`/student/courses/drop/${courseId}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to drop course');
+      }
+
+      setSuccess(response.data.message || 'Successfully dropped course!');
       fetchCourses(); // Refresh list
+      
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to drop course');
+      console.error('Drop Course Error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+
+      const errorMessage = err.response?.status === 404
+        ? 'Enrollment not found'
+        : err.response?.status === 400
+        ? err.response.data.error
+        : 'Failed to drop course. Please try again.';
+
+      setError(errorMessage);
+      
+      if (err.response?.status === 401) {
+        removeToken();
+        navigate('/');
+      }
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCloseAlert = () => {
-    setError(null);
-    setSuccess(null);
-  };
+  setError(null);
+  setSuccess(null);
+  setSnackbarOpen(false);
+};
 
   if (loading) {
     return (
@@ -161,7 +208,7 @@ const fetchCourses = async () => {
     <StudentNavbar />
       <Box sx={{ p: 3, mt: 8 }}>
       <Typography variant="h4" gutterBottom>
-        {type === 'enrolled' ? 'My Courses' : 'Available Courses'}
+        {type === 'enrolled' ? 'Enrolled Courses': 'Available Courses'}
       </Typography>
       
       {error && (
@@ -201,11 +248,11 @@ const fetchCourses = async () => {
             variant="outlined" 
             sx={{ mt: 2 }}
             onClick={() => navigate(type === 'enrolled' 
-              ? '/student/courses/available' 
+              ? '/student/course/list' 
               : '/student/course/enroll'
             )}
           >
-            View {type === 'enrolled' ? 'Available Courses' : 'My Courses'}
+            View {type === 'enrolled' ? 'My Courses' : 'My Courses'}
           </Button>
         </Paper>
       )}

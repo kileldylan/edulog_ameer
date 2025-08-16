@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Grid, Link, Typography, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import { TextField, Button, Box, Grid, Typography, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 function Register() {
   const [userType, setUserType] = useState('student');
@@ -10,8 +10,12 @@ function Register() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
     try {
         // Prepare data based on user type
         const dataToSend = {
@@ -125,9 +129,16 @@ function Register() {
       </Button>
       <Grid item xs={12} sx={{ textAlign: 'center', mt: 1 }}>
           <Typography variant="body2">
-              Already't have an account?
-              <Link to="/login" style={{ marginLeft: '5px', color: '#1976d2' }}>
-                  Login
+              Already have an account?{' '}
+              <Link 
+                  to="/" 
+                  style={{ 
+                      color: '#1976d2',
+                      pointerEvents: isLoading ? 'none' : 'auto',
+                      opacity: isLoading ? 0.7 : 1
+                  }}
+              >
+                Login
               </Link>
           </Typography>
       </Grid>
