@@ -1,35 +1,32 @@
 const db = require('../config/db');
 
 const User = {
-    findByUsername: (username, callback) => {
-        const query = 'SELECT student_id, username, password, role FROM users WHERE username = ?';
-        db.query(query, [username], (err, results) => {
-            if (err) return callback(err);
-            callback(null, results);
-        });
-    },
+  // Updated findByUsername to always return an array
+  findByUsername: (username, callback) => {
+    const query = 'SELECT * FROM users WHERE username = ?';
+    db.query(query, [username], (err, results) => {
+      if (err) return callback(err);
+      // Ensure we always return an array, even if empty
+      callback(null, results);
+    });
+  },
 
-    createUser: (student_id, username, email, role, password, callback) => {
-        // Prepare the insert statement and values
-        const query = 'INSERT INTO users (username, email, role, password' + 
-                      (student_id ? ', student_id' : '') + 
-                      ') VALUES (?, ?, ?, ?' + 
-                      (student_id ? ', ?' : '') + 
-                      ')';
-        
-        const values = [username, email, role, password];
-        if (student_id) {
-            values.push(student_id); // Only add student_id if it's provided
-        }
+  // ... keep your other methods the same ...
+  createStudentRecord: (studentData, callback) => {
+    const { name, email, department, course_id, year_of_study } = studentData;
+    const query = `
+      INSERT INTO students (name, email, department, course_id, year_of_study)
+      VALUES (?, ?, ?, ?, ?)`;
+    db.query(query, [name, email, department, course_id, year_of_study], callback);
+  },
 
-        db.query(query, values, (err) => {
-            if (err) {
-                console.error('Database insertion error:', err); // Log the error
-                return callback(err);
-            }
-            callback(null);
-        });
-    }
+  createUser: (userData, callback) => {
+    const { username, email, role, password, student_id } = userData;
+    const query = `
+      INSERT INTO users (username, email, role, password, student_id)
+      VALUES (?, ?, ?, ?, ?)`;
+    db.query(query, [username, email, role, password, student_id || null], callback);
+  }
 };
 
 module.exports = User;

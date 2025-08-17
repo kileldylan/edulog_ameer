@@ -3,19 +3,28 @@ const moment = require('moment-timezone');
 
 const Student = {
   // Get student by user ID (corrected version)
-  getByUserId: (userId, callback) => {
+  getById: (userId, callback) => {
     const query = `
-      SELECT s.* FROM students s
-      JOIN users u ON s.student_id = u.student_id
-      WHERE u.user_id = ?
-      LIMIT 1
+      SELECT student_id 
+      FROM users 
+      WHERE user_id = ?
     `;
     db.query(query, [userId], (err, results) => {
-      if (err) return callback(err);
-      if (!results.length) {
-        return callback(null, null); // Explicitly return null if no student found
+      if (err) {
+        console.error('Database Error in getStudentIdFromUser:', {
+          query: query,
+          params: [userId],
+          error: err
+        });
+        return callback(err);
       }
-      callback(null, results[0]);
+      
+      // Return in the exact format the controller expects
+      if (results.length > 0 && results[0].student_id) {
+        callback(null, { student_id: results[0].student_id });
+      } else {
+        callback(null, null); // Explicit null for not found
+      }
     });
   },
   // Get attendance statistics
@@ -33,6 +42,49 @@ const Student = {
     db.query(query, [student_id], callback);
   },
 
+  getSessionsByStudent: (userId, callback) => {
+  // First get the student_id from user_id
+  const studentQuery = `
+    SELECT s.student_id 
+    FROM students s
+    JOIN users u ON s.user_id = u.user_id
+    WHERE u.user_id = ?
+  `;
+  
+  db.query(studentQuery, [userId], (err, studentResults) => {
+    if (err) return callback(err);
+    if (studentResults.length === 0) return callback(null, []);
+    
+    const studentId = studentResults[0].student_id;
+    
+    // Now get sessions for enrolled courses
+    const sessionsQuery = `
+      SELECT 
+        s.session_id, 
+        s.session_date,
+        s.start_time,
+        s.end_time,
+        s.room,
+        c.course_id,
+        c.course_name,
+        c.course_code,
+        t.name AS teacher_name,
+        IFNULL(a.status, 'Not Recorded') AS attendance_status
+      FROM sessions s
+      JOIN courses c ON s.course_id = c.course_id
+      JOIN teachers t ON s.teacher_id = t.teacher_id
+      JOIN student_courses sc ON c.course_id = sc.course_id
+      LEFT JOIN attendance a ON s.session_id = a.session_id AND a.student_id = ?
+      WHERE sc.student_id = ?
+        AND sc.status = 'active'
+        AND s.session_date >= CURDATE()
+        AND s.status = 'scheduled'
+      ORDER BY s.session_date ASC, s.start_time ASC
+    `;
+    
+    db.query(sessionsQuery, [studentId, studentId], callback);
+  });
+},
   // Get available sessions
   getAvailableSessions: (student_id, callback) => {
     const query = `

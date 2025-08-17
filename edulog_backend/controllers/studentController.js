@@ -15,6 +15,22 @@ const dbOperation = (operation, ...args) => {
   });
 };
 
+const promisify = (method, ...args) => {
+  return new Promise((resolve, reject) => {
+    method(...args, (err, result) => {
+      if (err) {
+        console.error('Database Error:', {
+          method: method.name || 'anonymous',
+          error: err.message,
+          stack: err.stack
+        });
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};
 // Get dashboard data
 exports.getDashboard = async (req, res) => {
   try {
@@ -55,6 +71,31 @@ exports.getDashboard = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to load dashboard data',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.getStudentSessions = async (req, res) => {
+  try {
+    const sessions = await promisify(Student.getAvailableSessions, req.user.id);
+    
+    // Format the sessions data for the frontend
+    const formattedSessions = sessions.map(session => ({
+      ...session,
+      attended: session.attendance_status === 'Present',
+      teacher_name: session.teacher_name || 'Not Assigned'
+    }));
+
+    res.json({
+      success: true,
+      data: formattedSessions
+    });
+  } catch (error) {
+    console.error('Sessions Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch available sessions',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

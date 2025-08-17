@@ -68,7 +68,7 @@ const handleLogin = async (e) => {
         // Redirect
         navigate(response.data.role === 'student' 
             ? '/student/dashboard' 
-            : '/admin/dashboard');
+            : '/adminHome');
 
     } catch (err) {
         console.error('Login error:', err);

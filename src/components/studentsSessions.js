@@ -85,7 +85,7 @@ const StudentSessions = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const fetchSessions = async () => {
+  const fetchSessions = async (student_id) => {
     try {
       setLoading(true);
 
@@ -97,7 +97,7 @@ const StudentSessions = () => {
       }
 
       // Axios instance automatically attaches token via interceptor
-      const response = await axiosInstance.get('/student/sessions');
+      const response = await axiosInstance.get(`/student/sessions/${student_id}`);
       setSessions(response.data);
       setError(null);
 

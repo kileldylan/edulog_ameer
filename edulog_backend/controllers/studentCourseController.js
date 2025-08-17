@@ -1,6 +1,9 @@
 const StudentCourse = require('../models/studentCourseModel');
 const Student = require('../models/studentModel');
 const Course = require('../models/courseModel');
+const User = require('../models/userModel');
+const db = require('../config/db');
+
 const { validationResult } = require('express-validator');
 
 // Universal promisify function
@@ -26,16 +29,7 @@ exports.enrollInCourse = async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   try {
-    // 1. Get student via user_id
-    const student = await promisify(Student.getById, req.user.id);
-    if (!student) {
-      return res.status(404).json({ 
-        success: false,
-        error: 'Student profile not found' 
-      });
-    }
-
-    // 2. Verify course exists
+    // 1. Verify course exists
     const course = await promisify(Course.getById, req.body.course_id);
     if (!course) {
       return res.status(404).json({ 
@@ -44,10 +38,10 @@ exports.enrollInCourse = async (req, res) => {
       });
     }
 
-    // 3. Check existing enrollment
+    // 2. Check existing enrollment using user_id instead of student_id
     const [enrollment] = await promisify(
-      StudentCourse.isEnrolled, 
-      student.student_id, 
+      StudentCourse.isEnrolled,  // New method needed
+      req.user.id, 
       req.body.course_id
     );
 
@@ -58,17 +52,16 @@ exports.enrollInCourse = async (req, res) => {
       });
     }
 
-    // 4. Create enrollment
+    // 3. Create enrollment using user_id
     await promisify(
-      StudentCourse.enrollStudent, 
-      student.student_id,  // Use student_id from students table
+      StudentCourse.enrollStudent,  // New method needed
+      req.user.id,
       req.body.course_id
     );
 
     return res.json({ 
       success: true,
-      message: 'Enrollment successful',
-      studentId: student.student_id  // Return for debugging
+      message: 'Enrollment successful'
     });
 
   } catch (error) {
@@ -116,6 +109,23 @@ exports.getAvailableCourses = async (req, res) => {
     return res.status(500).json({ 
       success: false,
       error: 'Failed to fetch available courses'
+    });
+  }
+};
+
+exports.getAllCoursesPublic = async (req, res) => {
+  try {
+    const query = 'SELECT course_id, course_name FROM courses';
+    const [courses] = await db.promise().query(query);
+    return res.json({ 
+      success: true, 
+      data: courses 
+    });
+  } catch (error) {
+    console.error('Get All Courses Error:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch courses'
     });
   }
 };

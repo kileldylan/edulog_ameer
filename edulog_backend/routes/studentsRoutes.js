@@ -5,6 +5,8 @@ const studentCourseController = require('../controllers/studentCourseController'
 const { verifyToken, verifyStudent } = require('../middleware/authMiddleware');
 const { check } = require('express-validator');
 
+router.get('/courses/all', studentCourseController.getAllCoursesPublic);
+
 // All routes now protected
 router.use(verifyToken);
 router.use(verifyStudent);
@@ -14,6 +16,7 @@ router.get('/dashboard', studentController.getDashboard);
 
 // Sessions
 router.get('/sessions', studentController.getAvailableSessions);
+router.get('/sessions/:student_id', studentController.getStudentSessions);
 router.post('/sessions/:session_id/clock-in', studentController.clockInToSession);
 
 // Attendance
