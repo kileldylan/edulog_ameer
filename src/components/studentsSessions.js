@@ -84,43 +84,53 @@ const StudentSessions = () => {
   const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
 
+
   useEffect(() => {
-  const fetchSessions = async (student_id) => {
-    try {
-      setLoading(true);
+    const fetchSessions = async () => {
+      try {
+        setLoading(true);
+        const token = getToken();
+        if (!token) {
+          setError('Authentication token missing. Please log in again.');
+          return;
+        }
 
-      // Check if token exists before making request
-      const token = getToken();
-      if (!token) {
-        setError('Authentication token missing. Please log in again.');
-        return;
+        // First get enrolled courses
+        const coursesResponse = await axiosInstance.get('/student/courses/enrolled');
+        const enrolledCourses = coursesResponse.data.data;
+
+        if (!enrolledCourses || enrolledCourses.length === 0) {
+          setSessions([]);
+          return;
+        }
+
+        // Then get sessions for each course
+        const sessionsPromises = enrolledCourses.map(course => 
+          axiosInstance.get(`/student/sessions/course/${course.course_id}`)
+        );
+
+        const sessionsResponses = await Promise.all(sessionsPromises);
+        const allSessions = sessionsResponses.flatMap(res => res.data.data);
+
+        setSessions(allSessions);
+        setError(null);
+
+      } catch (err) {
+        console.error('Sessions error:', err);
+        if (err.response?.status === 401) {
+          removeToken();
+          setError('Session expired. Please log in again.');
+          window.location.href = '/';
+        } else {
+          setError(err.response?.data?.error || 'Failed to load sessions');
+        }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Axios instance automatically attaches token via interceptor
-      const response = await axiosInstance.get(`/student/sessions/${student_id}`);
-      setSessions(response.data);
-      setError(null);
-
-    } catch (err) {
-      console.error('Sessions error:', err);
-
-      // Handle token expiration or invalid token
-      if (err.response?.status === 401) {
-        removeToken();
-        setError('Session expired. Please log in again.');
-        window.location.href = '/';
-      } else {
-        setError(err.response?.data?.error || 'Failed to load sessions');
-      }
-
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchSessions();
-}, []);
-
+    fetchSessions();
+  }, []);
 
   const handleClockIn = async (sessionId) => {
     try {

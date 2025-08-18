@@ -36,10 +36,11 @@ exports.getDashboard = async (req, res) => {
   try {
     const studentId = req.user.id;
 
+    // Get all data in parallel
     const [student, stats, sessions] = await Promise.all([
-      dbOperation(Student.getById, studentId),
-      dbOperation(Student.getAttendanceStats, studentId),
-      dbOperation(Student.getAvailableSessions, studentId)
+      promisify(Student.getById, studentId),
+      promisify(Student.getAttendanceStats, studentId),
+      promisify(Student.getSessionsByStudent, studentId)
     ]);
 
     if (!student) {
@@ -49,20 +50,32 @@ exports.getDashboard = async (req, res) => {
       });
     }
 
+    // Calculate additional stats
+    const attendancePercentage = stats[0]?.total_sessions > 0 
+      ? Math.round((stats[0].present_count / stats[0].total_sessions) * 100)
+      : 0;
+
+    // Format response
     res.json({
       success: true,
       data: {
-        student,
-        stats: stats[0] || {
-          total_sessions: 0,
-          present_count: 0,
-          absent_count: 0,
-          late_count: 0,
-          attendance_percentage: 0,
-          current_streak: 0,
-          attendance_trend: 0
+        student: {
+          id: student.student_id,
+          name: student.name,
+          email: student.email,
+          department: student.department,
+          year_of_study: student.year_of_study
         },
-        upcomingSessions: sessions.slice(0, 3)
+        stats: {
+          ...stats[0],
+          attendance_percentage: attendancePercentage,
+          current_streak: 0, // You'll need to implement this
+          attendance_trend: 0 // You'll need to implement this
+        },
+        upcomingSessions: sessions.slice(0, 3).map(session => ({
+          ...session,
+          attended: session.attendance_status === 'Present'
+        }))
       }
     });
 
@@ -97,6 +110,38 @@ exports.getStudentSessions = async (req, res) => {
       success: false,
       error: 'Failed to fetch available sessions',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.getStudentSessionsByCourse = async (req, res) => {
+  try {
+    const { course_id } = req.params;
+    const student_id = req.user.id; // From authenticated user
+    
+    const sessions = await new Promise((resolve, reject) => {
+      Student.getByCourseForStudent(course_id, student_id, (err, results) => {
+        if (err) reject(err);
+        resolve(results);
+      });
+    });
+
+    // Format sessions for frontend
+    const formattedSessions = sessions.map(session => ({
+      ...session,
+      attended: session.attendance_status === 'Present',
+      teacher_name: session.teacher_name || 'Not Assigned'
+    }));
+
+    res.json({
+      success: true,
+      data: formattedSessions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch student sessions',
+      details: error.message
     });
   }
 };

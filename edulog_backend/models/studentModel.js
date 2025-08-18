@@ -2,29 +2,20 @@ const db = require('../config/db');
 const moment = require('moment-timezone');
 
 const Student = {
-  // Get student by user ID (corrected version)
+  // Get student by user ID
   getById: (userId, callback) => {
     const query = `
-      SELECT student_id 
-      FROM users 
-      WHERE user_id = ?
+      SELECT s.student_id, s.name, s.email, s.phone, s.department, s.year_of_study 
+      FROM students s
+      JOIN users u ON s.user_id = u.user_id
+      WHERE u.user_id = ?
     `;
     db.query(query, [userId], (err, results) => {
       if (err) {
-        console.error('Database Error in getStudentIdFromUser:', {
-          query: query,
-          params: [userId],
-          error: err
-        });
+        console.error('Database Error in getById:', err);
         return callback(err);
       }
-      
-      // Return in the exact format the controller expects
-      if (results.length > 0 && results[0].student_id) {
-        callback(null, { student_id: results[0].student_id });
-      } else {
-        callback(null, null); // Explicit null for not found
-      }
+      callback(null, results[0] || null); // Return the student object directly
     });
   },
   // Get attendance statistics
@@ -41,7 +32,30 @@ const Student = {
     `;
     db.query(query, [student_id], callback);
   },
-
+getByCourseForStudent: (course_id, student_id, callback) => {
+    const query = `
+      SELECT 
+        s.session_id, 
+        s.session_date,
+        s.start_time,
+        s.end_time,
+        s.location,
+        c.course_id,
+        c.course_name,
+        c.course_code,
+        t.name AS teacher_name,
+        IFNULL(a.status, 'Not Recorded') AS attendance_status
+      FROM sessions s
+      JOIN courses c ON s.course_id = c.course_id
+      JOIN teachers t ON s.teacher_id = t.teacher_id
+      LEFT JOIN attendance a ON s.session_id = a.session_id AND a.student_id = ?
+      WHERE s.course_id = ?
+        AND s.status = 'scheduled'
+        AND s.session_date >= CURDATE()
+      ORDER BY s.session_date ASC, s.start_time ASC
+    `;
+    db.query(query, [student_id, course_id], callback);
+  },
   getSessionsByStudent: (userId, callback) => {
   // First get the student_id from user_id
   const studentQuery = `
@@ -50,7 +64,6 @@ const Student = {
     JOIN users u ON s.user_id = u.user_id
     WHERE u.user_id = ?
   `;
-  
   db.query(studentQuery, [userId], (err, studentResults) => {
     if (err) return callback(err);
     if (studentResults.length === 0) return callback(null, []);
@@ -64,7 +77,7 @@ const Student = {
         s.session_date,
         s.start_time,
         s.end_time,
-        s.room,
+        s.location,
         c.course_id,
         c.course_name,
         c.course_code,
@@ -140,10 +153,10 @@ const Student = {
     const clockInTime = moment().tz('Africa/Nairobi').format('YYYY-MM-DD HH:mm:ss');
     const query = `
       INSERT INTO attendance 
-      (student_id, session_id, clock_in, status) 
+      (student_id, session_id, clockInTime, status) 
       VALUES (?, ?, ?, 'Present')
       ON DUPLICATE KEY UPDATE 
-      clock_in = VALUES(clock_in), 
+      clockInTime = VALUES(clockInTime), 
       status = VALUES(status)
     `;
     db.query(query, [student_id, session_id, clockInTime], callback);

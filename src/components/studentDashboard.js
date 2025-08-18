@@ -170,46 +170,39 @@ const StudentDashboard = () => {
     try {
       setLoading(prev => ({ ...prev, initial: true }));
       
-      // Debug: Verify token exists before request
-      const token = localStorage.getItem('token');
-      console.log('Current token:', token);
-      if (!token) throw new Error('No authentication token found');
+      // Single API call for dashboard data
+      const dashboardRes = await axiosInstance.get('/student/dashboard');
+      console.log('Dashboard API Response:', dashboardRes.data); // Debug log
 
-      // Debug: Verify axios instance configuration
-      console.log('Axios instance headers:', axiosInstance.defaults.headers);
-
-      // First request
-      const studentRes = await axiosInstance.get('/student/dashboard');
-      console.log('Dashboard response:', studentRes.data);
-
-      // Second request
+      // Separate call for attendance history
       const historyRes = await axiosInstance.get('/student/attendance');
-      console.log('Attendance response:', historyRes.data);
-
+      
       setDashboardData({
-        student: studentRes.data.student,
-        stats: studentRes.data.stats,
-        upcomingSessions: studentRes.data.upcomingSessions,
-        attendanceHistory: historyRes.data
+        student: dashboardRes.data.data.student,
+        stats: dashboardRes.data.data.stats,
+        upcomingSessions: dashboardRes.data.data.upcomingSessions,
+        attendanceHistory: historyRes.data.data
       });
 
     } catch (err) {
-      console.error('Dashboard error:', err);
-      console.log('Error details:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        headers: err.response?.headers
+      console.error('Dashboard error:', {
+        error: err,
+        response: err.response
       });
-
+      
       setError(err.response?.data?.error || 'Failed to load dashboard data');
       
-      // Handle specific error cases
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
         navigate('/login?session_expired=true');
       }
     } finally {
-      setLoading({ initial: false, stats: false, sessions: false, history: false });
+      setLoading({
+        initial: false,
+        stats: false,
+        sessions: false,
+        history: false
+      });
     }
   };
 

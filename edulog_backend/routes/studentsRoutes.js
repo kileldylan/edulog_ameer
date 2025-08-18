@@ -16,7 +16,7 @@ router.get('/dashboard', studentController.getDashboard);
 
 // Sessions
 router.get('/sessions', studentController.getAvailableSessions);
-router.get('/sessions/:student_id', studentController.getStudentSessions);
+router.get('/sessions/:students', studentController.getStudentSessions);
 router.post('/sessions/:session_id/clock-in', studentController.clockInToSession);
 
 // Attendance
@@ -25,7 +25,7 @@ router.get('/courses/enrolled', studentCourseController.getStudentCourses);
 
 // Get available courses (not enrolled)
 router.get('/courses/available', studentCourseController.getAvailableCourses);
-
+router.get('/sessions/course/:course_id', studentController.getStudentSessionsByCourse);
 // Enroll in course
 router.post('/courses/enroll', [
   check('course_id').isInt().withMessage('Valid course ID required')
