@@ -87,7 +87,7 @@ exports.register = async (req, res) => {
 
     // 2. Check if username exists (updated destructuring)
     const userExists = await promisify(User.findByUsername, username);
-    if (userExists) {
+    if (userExists && userExists.length > 0) {
       return res.status(409).json({ message: 'Username already exists.' });
     }
 

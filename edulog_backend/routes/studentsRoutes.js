@@ -13,6 +13,7 @@ router.use(verifyStudent);
 
 // Dashboard - no need for student_id in URL
 router.get('/dashboard', studentController.getDashboard);
+router.get('/all-students', studentController.getAllStudents);
 
 // Sessions
 router.get('/sessions', studentController.getAvailableSessions);

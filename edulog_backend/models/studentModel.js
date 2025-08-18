@@ -2,22 +2,21 @@ const db = require('../config/db');
 const moment = require('moment-timezone');
 
 const Student = {
+  
   // Get student by user ID
-  getById: (userId, callback) => {
-    const query = `
-      SELECT s.student_id, s.name, s.email, s.phone, s.department, s.year_of_study 
-      FROM students s
-      JOIN users u ON s.user_id = u.user_id
-      WHERE u.user_id = ?
-    `;
-    db.query(query, [userId], (err, results) => {
-      if (err) {
-        console.error('Database Error in getById:', err);
-        return callback(err);
-      }
-      callback(null, results[0] || null); // Return the student object directly
-    });
-  },
+getById: (student_id, callback) => {
+  const query = 'SELECT * FROM students WHERE student_id = ?';
+  db.query(query, [student_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching student:', err);
+      return callback(err, null);
+    }
+    if (results.length === 0) {
+      return callback(null, null); // No student found
+    }
+    callback(null, results[0]);
+  });
+},
   // Get attendance statistics
   getAttendanceStats: (student_id, callback) => {
     const query = `
@@ -61,7 +60,7 @@ getByCourseForStudent: (course_id, student_id, callback) => {
   const studentQuery = `
     SELECT s.student_id 
     FROM students s
-    JOIN users u ON s.user_id = u.user_id
+    JOIN users u ON s.student_id = u.student_id
     WHERE u.user_id = ?
   `;
   db.query(studentQuery, [userId], (err, studentResults) => {

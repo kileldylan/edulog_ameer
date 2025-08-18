@@ -31,6 +31,24 @@ const promisify = (method, ...args) => {
     });
   });
 };
+
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await promisify(Student.getAllStudents);
+    
+    res.json({
+      success: true,
+      data: students
+    });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch students',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
 // Get dashboard data
 exports.getDashboard = async (req, res) => {
   try {

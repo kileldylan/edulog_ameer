@@ -39,7 +39,6 @@ function App() {
         <Route path="/student/sessions" element={<StudentSessions />} />
         <Route path="/student/attendance" element={<AttendanceHistory />} />
         <Route path="/student/profile" element={<StudentProfile />} />
-        <Route path="/student/course/list" element={<CourseList />} />
         <Route path="/student/course/enroll" element={<CourseEnrollmentPage />} />
 
         <Route path="/reports" element={<ReportsPage/>} />

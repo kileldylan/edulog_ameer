@@ -20,7 +20,7 @@ const CourseEnrollmentPage = () => {
             onChange={handleTabChange}
             variant="fullWidth"
           >
-            <Tab label="Enroll Courses" />
+            <Tab label="Available Courses" />
             <Tab label="Enrolled Courses" />
           </Tabs>
         </Paper>

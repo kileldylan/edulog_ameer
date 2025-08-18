@@ -20,8 +20,7 @@ const StudentNavbar = () => {
     { text: 'Dashboard', icon: <Dashboard />, path: '/student/dashboard' },
     { text: 'Available Sessions', icon: <Event />, path: '/student/sessions' },
     { text: 'Attendance History', icon: <History />, path: '/student/attendance' },
-    { text: 'My Courses', icon: <School />, path: '/student/course/list' },
-    { text: 'Enroll Course ', icon: <CastForEducation />, path: '/student/course/enroll' },
+    { text: 'Courses ', icon: <CastForEducation />, path: '/student/course/enroll' },
     { text: 'Profile', icon: <Person />, path: '/student/profile' },
 
 

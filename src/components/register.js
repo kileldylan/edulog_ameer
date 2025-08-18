@@ -66,7 +66,7 @@ function Register() {
 
       if (response.data.success) {
         setSuccessMessage('Registration successful!');
-        setTimeout(() => navigate('/'), 2000);
+        setTimeout(() => navigate('/'), 1000);
         setFormData({
           username: '',
           email: '',

@@ -153,41 +153,50 @@ const fetchCourses = async () => {
     }
   };
 
-  const handleDrop = async (courseId) => {
-    try {
-      setActionLoading(true);
-      const response = await axiosInstance.delete(`/student/courses/drop/${courseId}`);
-      
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to drop course');
+const handleDrop = async (courseId) => {
+  try {
+    setActionLoading(true);
+    setError(null);
+    
+    const response = await axiosInstance.delete(
+      `/student/courses/drop/${courseId}`,
+      {
+        params: { course_id: courseId } // Send as query param if needed
       }
+    );
 
-      setSuccess(response.data.message || 'Successfully dropped course!');
-      fetchCourses(); // Refresh list
-      
-    } catch (err) {
-      console.error('Drop Course Error:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message
-      });
-
-      const errorMessage = err.response?.status === 404
-        ? 'Enrollment not found'
-        : err.response?.status === 400
-        ? err.response.data.error
-        : 'Failed to drop course. Please try again.';
-
-      setError(errorMessage);
-      
-      if (err.response?.status === 401) {
-        removeToken();
-        navigate('/');
-      }
-    } finally {
-      setActionLoading(false);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to drop course');
     }
-  };
+
+    setSuccess(response.data.message || 'Course dropped successfully!');
+    
+    // Refresh the course list after a short delay
+    setTimeout(() => {
+      fetchCourses();
+    }, 1000);
+    
+  } catch (err) {
+    console.error('Drop Course Error:', {
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message
+    });
+
+    const errorMessage = err.response?.data?.error 
+      || err.message 
+      || 'Failed to drop course. Please try again.';
+
+    setError(errorMessage);
+    
+    if (err.response?.status === 401) {
+      removeToken();
+      navigate('/');
+    }
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const handleCloseAlert = () => {
   setError(null);

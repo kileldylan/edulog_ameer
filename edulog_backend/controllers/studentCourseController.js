@@ -132,7 +132,7 @@ exports.getAllCoursesPublic = async (req, res) => {
 
 exports.dropCourse = async (req, res) => {
   try {
-    // 1. Get student via user_id
+    // 1. Get student_id from user_id
     const student = await promisify(Student.getById, req.user.id);
     if (!student) {
       return res.status(404).json({ 
@@ -141,21 +141,21 @@ exports.dropCourse = async (req, res) => {
       });
     }
 
-    // 2. Verify enrollment exists
-    const [enrollment] = await promisify(
+    // 2. Verify enrollment exists - use student.student_id
+    const enrollment = await promisify(
       StudentCourse.isEnrolled,
       student.student_id,
       req.params.course_id
     );
 
-    if (!enrollment) {
+    if (!enrollment || enrollment.length === 0) {
       return res.status(404).json({ 
         success: false,
         error: 'Enrollment record not found' 
       });
     }
 
-    // 3. Update status
+    // 3. Update status to 'dropped'
     const result = await promisify(
       StudentCourse.updateEnrollmentStatus,
       student.student_id,
@@ -163,17 +163,31 @@ exports.dropCourse = async (req, res) => {
       'dropped'
     );
 
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No enrollment record was updated'
+      });
+    }
+
     return res.json({ 
       success: true,
       message: 'Course dropped successfully',
-      affectedRows: result.affectedRows  // For debugging
+      data: {
+        student_id: student.student_id,
+        course_id: req.params.course_id
+      }
     });
 
   } catch (error) {
-    console.error('Drop Error:', error);
+    console.error('Drop Course Error:', {
+      message: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ 
       success: false,
-      error: 'Failed to drop course'
+      error: 'Failed to drop course',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

@@ -8,6 +8,8 @@ import {
 import { Add, Edit, Delete, Download } from '@mui/icons-material';
 import axios from 'axios';
 import AppBarComponent from './CustomAppBar';
+import axiosInstance from '../axios/axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const departments = ['Arts', 'Business','Commerce', 'Computer Science', 'Engineering', 'Health', 'Science',  'Social Science'];
 const years = ['1', '2', '3', '4'];
@@ -23,24 +25,53 @@ const StudentManagement = () => {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
     const [drawerOpen, setDrawerOpen] = React.useState(false);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchStudents();
     }, []);
 
     const fetchStudents = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/students');
-            if (Array.isArray(response.data)) {
-                setStudents(response.data);
-            } else {
-                console.error('Expected an array but got:', response.data);
-                setStudents([]);
-            }
-        } catch (error) {
-            console.error('Error fetching students:', error);
-            setStudents([]);
+    try {
+        const response = await axiosInstance.get('/student/all-students', {
+        });
+
+        if (response.data.success && Array.isArray(response.data.data)) {
+        setStudents(response.data.data);
+        } else {
+        console.error('Unexpected response format:', response.data);
+        setStudents([]);
+        // Show error to user
+        setError('Failed to load students. Invalid data format.');
         }
+    } catch (error) {
+        console.error('Error fetching students:', {
+        message: error.message,
+        response: error.response?.data,
+        code: error.code
+        });
+        
+        setStudents([]);
+        
+        // Handle different error cases
+        if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 401) {
+            setError('Session expired. Please login again.');
+            localStorage.removeItem('token');
+            navigate('/login');
+        } else {
+            setError(error.response.data.error || 'Failed to fetch students');
+        }
+        } else if (error.request) {
+        // Request was made but no response
+        setError('Network error. Please check your connection.');
+        } else {
+        // Other errors
+        setError('Failed to fetch students. Please try again.');
+        }
+    }
     };
 
     const handleOpenDialog = (student = null) => {
