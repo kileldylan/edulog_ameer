@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Typography, Card, CardContent, Grid, Paper, 
-  CircularProgress, Button, Avatar, Chip, Divider,
+  Box, Typography, Card, CardContent, Grid, Paper, Button, Avatar, Chip, Divider,
   Alert, Snackbar, Skeleton
 } from '@mui/material';
 import { 
@@ -9,8 +8,7 @@ import {
   CalendarToday, CheckCircle,
   Warning, TrendingUp, Class
 } from '@mui/icons-material';
-import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Bar, Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 import dayjs from 'dayjs';
@@ -146,56 +144,62 @@ const SessionCard = ({ session, onClockIn, loading }) => {
   );
 };
 
-// Main Dashboard Component
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
     student: null,
     stats: null,
-    upcomingSessions: null,
-    attendanceHistory: null
+    upcomingSessions: [],
+    attendanceHistory: []
   });
+  
   const [loading, setLoading] = useState({
     initial: true,
     stats: true,
     sessions: true,
     history: true
   });
+  
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: '', 
+    severity: 'success' 
+  });
+  
   const navigate = useNavigate();
-  const { student_id } = useParams();
 
-  // Fetch all dashboard data
   const fetchDashboardData = async () => {
     try {
-      setLoading(prev => ({ ...prev, initial: true }));
-      
-      // Single API call for dashboard data
-      const dashboardRes = await axiosInstance.get('/student/dashboard');
-      console.log('Dashboard API Response:', dashboardRes.data); // Debug log
-
-      // Separate call for attendance history
-      const historyRes = await axiosInstance.get('/student/attendance');
-      
-      setDashboardData({
-        student: dashboardRes.data.data.student,
-        stats: dashboardRes.data.data.stats,
-        upcomingSessions: dashboardRes.data.data.upcomingSessions,
-        attendanceHistory: historyRes.data.data
-      });
-
-    } catch (err) {
-      console.error('Dashboard error:', {
-        error: err,
-        response: err.response
+      setLoading({
+        initial: true,
+        stats: true,
+        sessions: true,
+        history: true
       });
       
-      setError(err.response?.data?.error || 'Failed to load dashboard data');
-      
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login?session_expired=true');
+      const [dashboardRes, historyRes] = await Promise.all([
+        axiosInstance.get('/student/dashboard'),
+        axiosInstance.get('/student/attendance')
+      ]);
+
+      if (dashboardRes.data.success && historyRes.data.success) {
+        setDashboardData({
+          student: dashboardRes.data.data.student,
+          stats: dashboardRes.data.data.stats,
+          upcomingSessions: dashboardRes.data.data.upcomingSessions || [],
+          attendanceHistory: historyRes.data.data || []
+        });
+      } else {
+        throw new Error(dashboardRes.data.error || 'Failed to load dashboard data');
       }
+    } catch (err) {
+      console.error('Dashboard error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to load dashboard');
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.error || err.message || 'Failed to load dashboard data',
+        severity: 'error'
+      });
     } finally {
       setLoading({
         initial: false,
@@ -207,43 +211,31 @@ const StudentDashboard = () => {
   };
 
   const handleClockIn = async (sessionId) => {
-      try {
-          await axiosInstance.post(`/student/sessions/${sessionId}/clock-in`);
-          setSnackbar({
-              open: true,
-              message: 'Successfully clocked in!',
-              severity: 'success'
-          });
-          
-          // Refresh sessions data using axiosInstance
-          const sessionsRes = await axiosInstance.get('/student/sessions');
-          setDashboardData(prev => ({
-              ...prev,
-              upcomingSessions: sessionsRes.data
-          }));
-      } catch (err) {
-          setSnackbar({
-              open: true,
-              message: err.response?.data?.error || 'Clock-in failed',
-              severity: 'error'
-          });
-      }
+    try {
+      await axiosInstance.post(`/student/sessions/${sessionId}/clock-in`);
+      setSnackbar({
+        open: true,
+        message: 'Successfully clocked in!',
+        severity: 'success'
+      });
+      // Refresh the dashboard data
+      await fetchDashboardData();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.error || 'Clock-in failed',
+        severity: 'error'
+      });
+    }
   };
 
-  // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  // Initial data fetch
   useEffect(() => {
-    if (student_id) {
-      fetchDashboardData();
-    } else {
-      setError('Student ID not found');
-      setLoading(prev => ({ ...prev, initial: false }));
-    }
-  }, [student_id]);
+    fetchDashboardData();
+  }, []);
 
   // Prepare chart data
   const attendanceChartData = {
@@ -275,6 +267,13 @@ const StudentDashboard = () => {
     <>
       <StudentNavbar />
       <Box sx={{ p: 3, mt: 8 }}>
+        {/* Error Display */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
         {/* Welcome Section */}
         <Box sx={{ 
           display: 'flex', 
@@ -310,7 +309,7 @@ const StudentDashboard = () => {
               </Avatar>
               <Box>
                 <Typography variant="h4" fontWeight="bold">
-                  Welcome back, {dashboardData.student?.name?.split(' ')[0] || 'Student'}!
+                  Welcome back, {dashboardData.student?.name?.split(' ')[0] || 'Student'}
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                   {dashboardData.student?.department || 'Department'} • Year {dashboardData.student?.year_of_study || '0'}
@@ -324,7 +323,7 @@ const StudentDashboard = () => {
                   />
                   <Chip 
                     icon={dashboardData.stats?.attendance_trend > 0 ? <CheckCircle /> : <Warning />} 
-                    label={dashboardData.stats?.attendance_trend > 0 ? 'Improving' : 'Needs improvement'} 
+                    label={dashboardData.stats?.attendance_trend > 0 ? 'Needs improvement' : 'Improving' } 
                     color={dashboardData.stats?.attendance_trend > 0 ? 'success' : 'warning'}
                   />
                 </Box>
@@ -381,8 +380,8 @@ const StudentDashboard = () => {
                   <SessionCard loading={true} />
                   <SessionCard loading={true} />
                 </>
-              ) : dashboardData.upcomingSessions?.length > 0 ? (
-                dashboardData.upcomingSessions.slice(0, 3).map(session => (
+              ) : dashboardData.upcomingSessions.length > 0 ? (
+                dashboardData.upcomingSessions.map(session => (
                   <SessionCard 
                     key={session.session_id} 
                     session={session} 
@@ -398,11 +397,11 @@ const StudentDashboard = () => {
                 </Box>
               )}
               
-              {dashboardData.upcomingSessions?.length > 3 && (
+              {dashboardData.upcomingSessions.length > 3 && (
                 <Button 
                   fullWidth 
                   sx={{ mt: 2 }}
-                  onClick={() => navigate(`/student/sessions`)}
+                  onClick={() => navigate('/student/sessions')}
                 >
                   View All Sessions ({dashboardData.upcomingSessions.length})
                 </Button>
@@ -461,7 +460,7 @@ const StudentDashboard = () => {
               <Button 
                 fullWidth 
                 sx={{ mt: 2 }}
-                onClick={() => navigate(`/student/attendance`)}
+                onClick={() => navigate('/student/attendance')}
                 startIcon={<EventAvailable />}
               >
                 View Detailed Attendance History

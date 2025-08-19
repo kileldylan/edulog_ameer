@@ -1,270 +1,182 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Container,
-  Grid,
-  Paper,
-  Button
+import { 
+  Box, Typography, Grid, Paper, Button,
+  Card, CardContent, Avatar, Divider, List, ListItem, ListItemText,
+  Alert
 } from '@mui/material';
+import { 
+  People, EventAvailable, EventBusy, Class, 
+  TrendingUp, Assignment, Report
+} from '@mui/icons-material';
 import { Pie, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  LineElement,
-  PointElement,
-  Filler,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from 'chart.js';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../axios/axiosInstance';
 import AppBarComponent from './CustomAppBar';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  LineElement,
-  PointElement,
-  Filler,
-  Tooltip,
-  Legend
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+const DashboardCard = ({ title, value, icon, color }) => (
+  <Card sx={{ height: '100%', boxShadow: 3, borderLeft: `4px solid ${color}` }}>
+    <CardContent>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item>
+          <Avatar sx={{ bgcolor: `${color}20`, color: color }}>
+            {icon}
+          </Avatar>
+        </Grid>
+        <Grid item xs>
+          <Typography variant="h5" fontWeight="bold">{value}</Typography>
+          <Typography variant="body1">{title}</Typography>
+        </Grid>
+      </Grid>
+    </CardContent>
+  </Card>
 );
 
-const AdminHome = ({ onLogout }) => {
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [attendanceToday, setAttendanceToday] = useState(0);
-  const [absentStudents, setAbsentStudents] = useState(0);
-  const [departmentStats, setDepartmentStats] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [username, setUsername] = useState('');
+const AdminHome = () => {
+  const [dashboardData, setDashboardData] = useState({
+    stats: null,
+    departmentStats: [],
+    recentLogs: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const totalStudentsResponse = await axios.get(`http://localhost:5000/api/attendance/stats/total-students`);
-        const attendanceTodayResponse = await axios.get(`http://localhost:5000/api/attendance/stats/attendance-today`);
-        const absentStudentsResponse = await axios.get(`http://localhost:5000/api/attendance/stats/absent-students`);
-        const departmentStatsResponse = await axios.get(`http://localhost:5000/api/students/stats/department-wise`);
-        const attendancePercentageResponse = await axios.get(`http://localhost:5000/api/attendance/percentage`);
-
-        setTotalStudents(totalStudentsResponse.data.total);
-        setAttendanceToday(attendanceTodayResponse.data.attendancePercentage);
-        setAbsentStudents(absentStudentsResponse.data.absentCount);
-        setDepartmentStats(departmentStatsResponse.data);
-        setAttendanceData(Array.isArray(attendancePercentageResponse.data) ? attendancePercentageResponse.data : []);  // Ensure data is an array
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        const response = await axiosInstance.get('/admin/dashboard');
+        setDashboardData(response.data.data);
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchData();
+    fetchDashboardData();
   }, []);
 
-  const getDepartmentChartData = () => {
-    const labels = departmentStats.map(stat => stat.department);
-    const data = departmentStats.map(stat => stat.student_count);
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: 'Students per Department',
-          data,
-          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-          hoverOffset: 4,
-        },
+  const getDepartmentChartData = () => ({
+    labels: dashboardData.departmentStats.map(d => d.department),
+    datasets: [{
+      label: 'Students',
+      data: dashboardData.departmentStats.map(d => d.student_count),
+      backgroundColor: [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
       ],
-    };
-  };
+      borderWidth: 1
+    }]
+  });
 
-  // New function to get attendance percentage chart data
-  const getAttendancePercentageChartData = () => {
-    // Check if attendanceData is an array and contains valid data
-    if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
-      return {
-        labels: [],
-        datasets: [
-          {
-            label: 'Attendance Percentage',
-            data: [],
-            backgroundColor: 'rgba(75, 192, 192, 0.6)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1,
-          },
-        ],
-      };
-    }
-
-    const labels = attendanceData.map(record => record.name); // Or record.student_id
-    const data = attendanceData.map(record => record.attendance_percentage);
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: 'Attendance Percentage',
-          data,
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1,
-        },
-      ],
-    };
-  };
-
-  const handleAttendanceManagement = () => {
-    navigate('/attendance'); // Redirect to login page
-  };
+  const handleAttendanceManagement = () => navigate('/admin/attendance');
+  const handleGenerateReports = () => navigate('/admin/reports');
 
   const toggleDrawer = () => {
   setDrawerOpen(!drawerOpen);
-  };
-
-  const handleGenerateReports = () => {
-    navigate('/reports');
-  };
+};
 
   return (
-  <>    
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
-        <Container style={{ marginTop: '80px' }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome, {username}!
-          </Typography>
+    <>
+      <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
+      <Box sx={{ p: 3, mt: 8 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin Dashboard
+        </Typography>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper elevation={3} style={{ padding: '20px', textAlign: 'center' }}>
-                <Typography variant="h6">Total Students</Typography>
-                <Typography variant="h4">{totalStudents}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper elevation={3} style={{ padding: '20px', textAlign: 'center' }}>
-                <Typography variant="h6">Total Attendance Today</Typography>
-                <Typography variant="h4">{attendanceToday}%</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper elevation={3} style={{ padding: '20px', textAlign: 'center' }}>
-                <Typography variant="h6">Absent Students Today</Typography>
-                <Typography variant="h4">{absentStudents}</Typography>
-              </Paper>
-            </Grid>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-            <Grid item xs={12} md={6}>
-            <Paper
-              elevation={3}
-              style={{
-                padding: '20px',
-                height: '650px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h6">Department-wise Attendance</Typography>
-              <div style={{ width: '100%', height: '100%' , flex: 1 }}>
-                <Pie data={getDepartmentChartData()} options={{ responsive: true }} />
-              </div>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={4}>
+            <DashboardCard 
+              title="Total Students" 
+              value={dashboardData.stats?.totalStudents || 0}
+              icon={<People />}
+              color="#3f51b5"
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <DashboardCard 
+              title="Today's Attendance" 
+              value={`${dashboardData.stats?.attendanceToday || 0}%`}
+              icon={<EventAvailable />}
+              color="#4caf50"
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <DashboardCard 
+              title="Absent Today" 
+              value={dashboardData.stats?.absentStudents || 0}
+              icon={<EventBusy />}
+              color="#f44336"
+            />
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3, height: '400px' }}>
+              <Typography variant="h6" gutterBottom>
+                Students by Department
+              </Typography>
+              <Pie 
+                data={getDepartmentChartData()} 
+                options={{ maintainAspectRatio: false }}
+              />
             </Paper>
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Paper
-              elevation={3}
-              style={{
-                padding: '20px',
-                height: '650px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h6">Attendance Percentage by Student</Typography>
-              <div style={{ width: '100%', height: '100%' , flex: 1 }}>
-                <Bar data={getAttendancePercentageChartData()} options={{ responsive: true }} />
-              </div>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Recent Attendance Logs
+              </Typography>
+              <List>
+                {dashboardData.recentLogs.map((log, index) => (
+                  <ListItem key={index} divider>
+                    <ListItemText 
+                      primary={`${log.name} - ${log.status}`}
+                      secondary={`${log.course} - ${new Date(log.date).toLocaleDateString()}`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
             </Paper>
           </Grid>
 
-            {/* Detailed Records and Logs */}
-          <Grid item xs={12} md={6}> 
-          <Paper elevation={3} style={{ padding: '20px' , height: '200px' }}>
-            <Typography variant="h6">Recent Attendance Logs</Typography>
-            <List>
-              <ListItem>
-                <ListItemText primary="John Doe - Present" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Jane Smith - Absent" />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="Tom Brown - Present" />
-              </ListItem>
-            </List>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}> 
-          <Paper elevation={3} style={{ padding: '20px' , height: '200px' }}>
-            <Typography variant="h6">Manage Students and Attendance by Course</Typography>
-            <Typography variant="body1">
-              Access detailed records of each student and manage attendance on a course-by-course basis.
-            </Typography>
-            <Button
-            onClick={handleAttendanceManagement}
-            variant="contained"
-            color="primary"
-            style={{ marginTop: '10px' }}
-          >
-            Manage Attendance
-            </Button>
-            <Button
-      variant="contained"
-      color="secondary"
-      style={{ marginTop: '10px', marginLeft: '10px' }}
-      onClick={handleGenerateReports}
-    >
-      Generate Reports
-    </Button>
-                </Paper>
-          </Grid>
-          {/* Upcoming Events and Reminders */}
           <Grid item xs={12}>
-              <Paper elevation={3} style={{ padding: '20px' }}>
-                <Typography variant="h6">Upcoming Events</Typography>
-                <List>
-                  <ListItem>
-                    <ListItemText primary="Parent-Teacher Meeting on Nov 10" />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="School Sports Day on Nov 15" />
-                  </ListItem>
-                </List>
-              </Paper>
-            </Grid>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<Class />}
+                  onClick={handleAttendanceManagement}
+                >
+                  Manage Attendance
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<Report />}
+                  onClick={handleGenerateReports}
+                >
+                  Generate Reports
+                </Button>
+              </Box>
+            </Paper>
           </Grid>
-        </Container>
-      </div>
+        </Grid>
+      </Box>
     </>
   );
 };

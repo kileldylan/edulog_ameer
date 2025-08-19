@@ -3,18 +3,16 @@ import {
   Box, Typography, TextField, Button, 
   Paper, Avatar, CircularProgress, Alert
 } from '@mui/material';
-import { Person, Email, Phone, Lock } from '@mui/icons-material';
-import axios from 'axios';
+import { Person, Email, Lock } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import StudentNavbar from './studentNavbar';
-import { getToken, removeToken } from '../axios/auth';
+import { getToken } from '../axios/auth';
 import axiosInstance from '../axios/axiosInstance';
 
 const StudentProfile = () => {
   const [profile, setProfile] = useState({
     name: '',
     email: '',
-    phone: '',
     department: '',
     year_of_study: ''
   });
@@ -29,44 +27,58 @@ const StudentProfile = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-              setError(null);
+        setError(null);
         
         const token = getToken();
         if (!token) {
           throw new Error('Authentication token missing');
         }
         
-        const response = await axiosInstance.get(`student/dashboard`);
-        setProfile(response.data.student);
-        setError(null);
+        const response = await axiosInstance.get('/student/dashboard');
+        
+        // Check if data exists and has the expected structure
+        if (response.data.success && response.data.data?.student) {
+          setProfile({
+            name: response.data.data.student.name || '',
+            email: response.data.data.student.email || '',
+            department: response.data.data.student.department || '',
+            year_of_study: response.data.data.student.year_of_study || ''
+          });
+        } else {
+          throw new Error('Invalid profile data structure');
+        }
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to load profile');
+        setError(err.response?.data?.error || err.message || 'Failed to load profile');
         console.error('Profile error:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, []);
+  }, [student_id]);
 
-  // For updating profile
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.put(`student/profile/${student_id}`, {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
+      await axiosInstance.put('/student/profile', {
         email: profile.email,
-        phone: profile.phone,
         password: password || undefined
       });
+      
       setSuccess('Profile updated successfully');
-      setError(null);
+      setPassword('');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile');
-      setSuccess(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading && !profile.name) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
         <CircularProgress />
@@ -85,7 +97,7 @@ const StudentProfile = () => {
         <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
             <Avatar sx={{ width: 100, height: 100, fontSize: 40 }}>
-              {profile.name?.charAt(0) || 'S'}
+              {profile.name.charAt(0) || 'S'}
             </Avatar>
           </Box>
 
@@ -97,7 +109,7 @@ const StudentProfile = () => {
               fullWidth
               margin="normal"
               label="Name"
-              value={profile.name || ''}
+              value={profile.name}
               disabled
               InputProps={{
                 startAdornment: <Person sx={{ mr: 1 }} />
@@ -109,7 +121,7 @@ const StudentProfile = () => {
               margin="normal"
               label="Email"
               type="email"
-              value={profile.email || ''}
+              value={profile.email}
               onChange={(e) => setProfile({...profile, email: e.target.value})}
               required
               InputProps={{
@@ -120,21 +132,8 @@ const StudentProfile = () => {
             <TextField
               fullWidth
               margin="normal"
-              label="Phone"
-              type="tel"
-              value={profile.phone || ''}
-              onChange={(e) => setProfile({...profile, phone: e.target.value})}
-              required
-              InputProps={{
-                startAdornment: <Phone sx={{ mr: 1 }} />
-              }}
-            />
-            
-            <TextField
-              fullWidth
-              margin="normal"
               label="Department"
-              value={profile.department || ''}
+              value={profile.department}
               disabled
             />
             
@@ -142,7 +141,7 @@ const StudentProfile = () => {
               fullWidth
               margin="normal"
               label="Year of Study"
-              value={profile.year_of_study || ''}
+              value={profile.year_of_study}
               disabled
             />
             
@@ -163,13 +162,15 @@ const StudentProfile = () => {
               <Button 
                 variant="contained" 
                 type="submit"
+                disabled={loading}
                 sx={{ mr: 2 }}
               >
-                Save Changes
+                {loading ? 'Saving...' : 'Save Changes'}
               </Button>
               <Button 
                 variant="outlined"
-                onClick={() => navigate(`/student/dashboard/${student_id}`)}
+                onClick={() => navigate('/student/dashboard')}
+                disabled={loading}
               >
                 Cancel
               </Button>

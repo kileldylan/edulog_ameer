@@ -2,6 +2,43 @@ const Teacher = require('../models/teacherModel');
 const Course = require('../models/courseModel');
 const Session = require('../models/sessionModel');
 const { validationResult } = require('express-validator');
+const Admin = require('../models/adminModel');
+
+exports.getDashboard = async (req, res) => {
+  try {
+    const dashboardData = await new Promise((resolve, reject) => {
+      Admin.getDashboardStats((err, results) => {
+        if (err) reject(err);
+        resolve(results);
+      });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          totalStudents: dashboardData.totalStudents,
+          attendanceToday: dashboardData.attendanceToday,
+          absentStudents: dashboardData.absentStudents
+        },
+        departmentStats: dashboardData.departmentStats,
+        recentLogs: dashboardData.recentLogs.map(log => ({
+          name: log.name,
+          status: log.status,
+          date: log.session_date,
+          course: log.course_name
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Admin Dashboard Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load dashboard data',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
 
 // Teacher Controllers
 exports.getAllTeachers = async (req, res) => {

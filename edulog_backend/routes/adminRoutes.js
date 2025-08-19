@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
 // Teacher routes
 router.get('/teachers', adminController.getAllTeachers);
@@ -20,5 +21,9 @@ router.get('/sessions', adminController.getAllSessions);
 router.post('/sessions', adminController.createSession);
 router.put('/sessions/:session_id', adminController.updateSession);
 router.delete('/sessions/:session_id', adminController.deleteSession);
+
+router.use(verifyToken);
+router.use(verifyAdmin);
+router.get('/dashboard', adminController.getDashboard);
 
 module.exports = router;

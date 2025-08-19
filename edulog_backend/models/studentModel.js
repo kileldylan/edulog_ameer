@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const moment = require('moment-timezone');
+const bcrypt = require('bcrypt');
 
 const Student = {
   
@@ -16,6 +17,69 @@ getById: (student_id, callback) => {
     }
     callback(null, results[0]);
   });
+},
+// Add these new methods to your Student model
+
+getStudentByUserId: (userId, callback) => {
+  const query = `
+    SELECT s.* FROM students s
+    JOIN users u ON s.student_id = u.student_id
+    WHERE u.user_id = ?
+  `;
+  db.query(query, [userId], (err, results) => {
+    if (err) return callback(err);
+    callback(null, results[0] || null);
+  });
+},
+
+getCurrentStreak: (userId, callback) => {
+  const query = `
+    WITH consecutive_days AS (
+      SELECT 
+        session_date,
+        status,
+        @streak := IF(
+          status = 'Present' AND DATEDIFF(session_date, @prev_date) = 1,
+          @streak + 1,
+          IF(status = 'Present', 1, 0)
+        ) AS streak,
+        @prev_date := session_date
+      FROM 
+        (SELECT a.session_id, s.session_date, a.status 
+         FROM attendance a
+         JOIN sessions s ON a.session_id = s.session_id
+         JOIN users u ON a.student_id = u.student_id
+         WHERE u.user_id = ?
+         ORDER BY s.session_date DESC) AS student_attendance,
+        (SELECT @streak := 0, @prev_date := NULL) AS vars
+    )
+    SELECT MAX(streak) AS current_streak FROM consecutive_days;
+  `;
+  db.query(query, [userId], callback);
+},
+
+getAttendanceTrend: (userId, callback) => {
+  const query = `
+    SELECT 
+      (
+        SELECT COUNT(*) 
+        FROM attendance a
+        JOIN sessions s ON a.session_id = s.session_id
+        JOIN users u ON a.student_id = u.student_id
+        WHERE u.user_id = ? 
+        AND a.status = 'Present'
+        AND s.session_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND CURDATE()
+      ) - (
+        SELECT COUNT(*) 
+        FROM attendance a
+        JOIN sessions s ON a.session_id = s.session_id
+        JOIN users u ON a.student_id = u.student_id
+        WHERE u.user_id = ? 
+        AND a.status = 'Present'
+        AND s.session_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 28 DAY) AND DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+      ) AS trend;
+  `;
+  db.query(query, [userId, userId], callback);
 },
   // Get attendance statistics
   getAttendanceStats: (student_id, callback) => {
@@ -162,14 +226,49 @@ getByCourseForStudent: (course_id, student_id, callback) => {
   },
 
   // Update profile
-  updateProfile: (student_id, profileData, callback) => {
-    const { email, phone, password } = profileData;
-    const query = `
-      UPDATE students 
-      SET email = ?, phone = ?, password = ?
-      WHERE student_id = ?
-    `;
-    db.query(query, [email, phone, password, student_id], callback);
+ updateProfile: (student_id, { email, password }, callback) => {
+    // Start transaction
+    db.beginTransaction(async (err) => {
+      if (err) return callback(err);
+
+      try {
+        // 1. Update student info (email)
+        await new Promise((resolve, reject) => {
+          db.query(
+            `UPDATE students SET email = ? WHERE student_id = ?`,
+            [email, student_id],
+            (err) => err ? reject(err) : resolve()
+          );
+        });
+
+        // 2. Update password in users table if provided
+        if (password) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          await new Promise((resolve, reject) => {
+            db.query(
+              `UPDATE users 
+               SET password = ? 
+               WHERE user_id = (
+                 SELECT user_id FROM students WHERE student_id = ?
+               )`,
+              [hashedPassword, student_id],
+              (err) => err ? reject(err) : resolve()
+            );
+          });
+        }
+
+        // Commit transaction
+        await new Promise((resolve, reject) => {
+          db.commit((err) => err ? reject(err) : resolve());
+        });
+
+        callback(null, { affectedRows: 1 });
+      } catch (error) {
+        // Rollback on error
+        await new Promise((resolve) => db.rollback(() => resolve()));
+        callback(error);
+      }
+    });
   }
 };
 

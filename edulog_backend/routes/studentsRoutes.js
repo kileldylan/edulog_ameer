@@ -11,7 +11,6 @@ router.get('/courses/all', studentCourseController.getAllCoursesPublic);
 router.use(verifyToken);
 router.use(verifyStudent);
 
-// Dashboard - no need for student_id in URL
 router.get('/dashboard', studentController.getDashboard);
 router.get('/all-students', studentController.getAllStudents);
 
@@ -38,7 +37,6 @@ router.delete('/courses/drop/:course_id', studentCourseController.dropCourse);
 // Profile
 router.put('/profile', [
   check('email').isEmail().withMessage('Valid email required'),
-  check('phone').isMobilePhone().withMessage('Valid phone number required'),
   check('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], studentController.updateProfile);
 

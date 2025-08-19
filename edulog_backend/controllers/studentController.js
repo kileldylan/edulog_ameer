@@ -52,25 +52,29 @@ exports.getAllStudents = async (req, res) => {
 // Get dashboard data
 exports.getDashboard = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
 
     // Get all data in parallel
-    const [student, stats, sessions] = await Promise.all([
-      promisify(Student.getById, studentId),
-      promisify(Student.getAttendanceStats, studentId),
-      promisify(Student.getSessionsByStudent, studentId)
+    const [student, stats, sessions, streakData, attendanceTrend] = await Promise.all([
+      promisify(Student.getById, userId),
+      promisify(Student.getAttendanceStats, userId),
+      promisify(Student.getSessionsByStudent, userId),
+      promisify(Student.getCurrentStreak, userId),
+      promisify(Student.getAttendanceTrend, userId)
     ]);
 
     if (!student) {
       return res.status(404).json({ 
         success: false,
-        error: 'Student not found' 
+        error: 'Student profile not found' 
       });
     }
 
-    // Calculate additional stats
-    const attendancePercentage = stats[0]?.total_sessions > 0 
-      ? Math.round((stats[0].present_count / stats[0].total_sessions) * 100)
+    // Calculate attendance percentage
+    const totalSessions = stats[0]?.total_sessions || 0;
+    const presentCount = stats[0]?.present_count || 0;
+    const attendancePercentage = totalSessions > 0 
+      ? Math.round((presentCount / totalSessions) * 100)
       : 0;
 
     // Format response
@@ -85,14 +89,23 @@ exports.getDashboard = async (req, res) => {
           year_of_study: student.year_of_study
         },
         stats: {
-          ...stats[0],
+          total_sessions: totalSessions,
+          present_count: presentCount,
+          absent_count: stats[0]?.absent_count || 0,
+          late_count: stats[0]?.late_count || 0,
           attendance_percentage: attendancePercentage,
-          current_streak: 0, // You'll need to implement this
-          attendance_trend: 0 // You'll need to implement this
+          current_streak: streakData?.current_streak || 0,
+          attendance_trend: attendanceTrend?.trend || 0
         },
         upcomingSessions: sessions.slice(0, 3).map(session => ({
-          ...session,
-          attended: session.attendance_status === 'Present'
+          session_id: session.session_id,
+          session_date: session.session_date,
+          start_time: session.start_time,
+          end_time: session.end_time,
+          course_name: session.course_name,
+          teacher_name: session.teacher_name,
+          attended: session.attendance_status === 'Present',
+          location: session.location
         }))
       }
     });

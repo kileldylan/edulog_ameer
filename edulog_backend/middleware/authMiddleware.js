@@ -23,6 +23,8 @@ const verifyToken = (req, res, next) => {
     req.user = {
       id: decoded.id,
       student_id: decoded.student_id || decoded.id, // Handle both cases
+      teacher_id: decoded.teacher_id || null, // For teachers
+      admin_id: decoded.admin_id || null, // For admins
       role: decoded.role
     };
     
@@ -40,7 +42,29 @@ const verifyStudent = (req, res, next) => {
   next();
 };
 
+const verifyTeacher = (req, res, next) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ 
+      success: false,
+      error: 'Teacher access required'
+    });
+  }
+  next();
+};
+
+const verifyAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ 
+      success: false,
+      error: 'Admin access required'
+    });
+  }
+  next();
+};
+
 module.exports = {
   verifyToken,
-  verifyStudent
+  verifyStudent,
+  verifyTeacher,
+  verifyAdmin
 };

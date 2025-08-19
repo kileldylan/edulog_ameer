@@ -24,8 +24,7 @@ import {
   Assignment as ReportsIcon,
   School as StudentsIcon,
   Class as SessionsIcon,
-  ExitToApp as LogoutIcon,
-  Notifications as NotificationsIcon
+  ExitToApp as LogoutIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -64,13 +63,6 @@ const AppBarComponent = ({ openDrawer, toggleDrawer }) => {
     // Add logout logic here
     navigate('/');
   };
-
-  // Mock notifications data
-  const notifications = [
-    { id: 1, text: 'New session scheduled for tomorrow', time: '2 hours ago' },
-    { id: 2, text: '3 students pending approval', time: '1 day ago' }
-  ];
-
   return (
     <>
       <StyledAppBar position="fixed">
@@ -92,18 +84,6 @@ const AppBarComponent = ({ openDrawer, toggleDrawer }) => {
           <div>
             <IconButton
               size="large"
-              aria-label="show notifications"
-              color="inherit"
-              onClick={handleNotificationsMenuOpen}
-              sx={{ mr: 1 }}
-            >
-              <Badge badgeContent={notifications.length} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            
-            <IconButton
-              size="large"
               edge="end"
               aria-label="account of current user"
               aria-controls="primary-search-account-menu"
@@ -118,32 +98,6 @@ const AppBarComponent = ({ openDrawer, toggleDrawer }) => {
           </div>
         </Toolbar>
       </StyledAppBar>
-
-      {/* Notifications Menu */}
-      <Menu
-        anchorEl={notificationsAnchorEl}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        keepMounted
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={Boolean(notificationsAnchorEl)}
-        onClose={handleMenuClose}
-      >
-        {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <MenuItem key={notification.id} onClick={handleMenuClose}>
-              <ListItemText 
-                primary={notification.text} 
-                secondary={notification.time} 
-                sx={{ width: 300 }}
-              />
-            </MenuItem>
-          ))
-        ) : (
-          <MenuItem onClick={handleMenuClose}>
-            <ListItemText primary="No new notifications" />
-          </MenuItem>
-        )}
-      </Menu>
 
       {/* Profile Menu */}
       <Menu
