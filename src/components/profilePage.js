@@ -1,138 +1,200 @@
-import React, { useState } from 'react';
-import { Avatar, Box, Drawer, List, ListItem, ListItemText, Button, Card, CardContent, CardHeader, Divider, Grid , TextField, Typography } from '@mui/material';
-import { Save } from '@mui/icons-material';
-import AppBarComponent from './CustomAppBar';
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, Typography, TextField, Button, 
+  Paper, Avatar, CircularProgress, Alert,
+  Grid, Card, CardContent, Divider
+} from '@mui/material';
+import { Person, Email, Lock, Save, Edit } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../axios/axiosInstance';
+import AppBarComponent from './CustomAppBar';
 
-const ProfilePage = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const navigate = useNavigate();
-  const [adminData, setAdminData] = useState({
-    user_id: 8,  // Example user_id
-    name: 'Amir Swalleh',
-    email: 'amirS@gmail.com',
-    role: 'admin',
-    profileImage: 'https://www.w3schools.com/w3images/avatar2.png',
+const AdminProfile = () => {
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    role: ''
   });
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
-  // Toggle edit mode
-  const toggleEdit = () => {
-    setIsEditing(!isEditing);
-  };
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await axiosInstance.get('/admin/profile');
+        setProfile({
+          name: response.data.data.name,
+          email: response.data.data.email,
+          role: response.data.data.role
+        });
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setAdminData({ ...adminData, [name]: value });
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
+      const updateData = {
+        email: profile.email,
+        ...(password && { password }) // Only include password if provided
+      };
 
-  const handleSave = () => {
-    axios.put(`http://localhost:5000/api/profileRoutes/update-profile/${adminData.user_id}`, {
-      username: adminData.name,
-      email: adminData.email,
-      role: adminData.role,
-    })
-    .then(response => {
-      console.log(response.data.message);
+      const response = await axiosInstance.put('/admin/profile', updateData);
+      
+      setSuccess(response.data.message || 'Profile updated successfully');
+      setPassword('');
       setIsEditing(false);
-    })
-    .catch(error => {
-      console.error('Error updating profile:', error);
-    });
-  };
-
-  const handleNavigation = (path) => {
-    setDrawerOpen(false);
-    navigate(path);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
+setDrawerOpen(!drawerOpen);
+};
+
+  if (loading && !profile.name) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
-    <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Box sx={{ paddingTop: '80px', paddingLeft: 3, paddingRight: 3 }}>
+      <AppBarComponent openDrawer={drawerOpen} toggleDrawer={toggleDrawer} />
+      <Box sx={{ p: 3, mt: 8 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin Profile
+        </Typography>
+        
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
         <Grid container spacing={3}>
-          {/* Profile Card */}
           <Grid item xs={12} md={4}>
-            <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
-              <CardHeader
-                avatar={<Avatar alt="Admin Profile" src={adminData.profileImage} sx={{ width: 100, height: 100 }} />}
-                title={adminData.name}
-                subheader={adminData.role}
-              />
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {adminData.bio}
-                </Typography>
-                <Button variant="outlined" color="primary" fullWidth onClick={toggleEdit}>
-                  {isEditing ? 'Cancel' : 'Edit Profile'}
-                </Button>
-              </CardContent>
-            </Card>
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Avatar 
+                sx={{ 
+                  width: 100, 
+                  height: 100, 
+                  fontSize: 40,
+                  mb: 2,
+                  mx: 'auto'
+                }}
+              >
+                {profile.name.charAt(0)}
+              </Avatar>
+              <Typography variant="h6">{profile.name}</Typography>
+              <Typography color="text.secondary">{profile.role}</Typography>
+              
+              <Button
+                variant="outlined"
+                sx={{ mt: 2 }}
+                startIcon={<Edit />}
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                {isEditing ? 'Cancel' : 'Edit Profile'}
+              </Button>
+            </Paper>
           </Grid>
 
-          {/* Profile Details */}
           <Grid item xs={12} md={8}>
-            <Card sx={{ boxShadow: 3 }}>
-              <CardHeader title="Profile Details" />
-              <CardContent>
+            <Paper sx={{ p: 3 }}>
+              <form onSubmit={handleSubmit}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <TextField
-                      label="Full Name"
-                      name="name"
-                      value={adminData.name}
-                      onChange={handleInputChange}
                       fullWidth
-                      disabled={!isEditing}
+                      label="Name"
+                      value={profile.name}
+                      disabled
+                      InputProps={{
+                        startAdornment: <Person sx={{ mr: 1 }} />
+                      }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  
+                  <Grid item xs={12}>
                     <TextField
+                      fullWidth
                       label="Email"
-                      name="email"
-                      value={adminData.email}
-                      onChange={handleInputChange}
-                      fullWidth
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile({...profile, email: e.target.value})}
+                      required
                       disabled={!isEditing}
+                      InputProps={{
+                        startAdornment: <Email sx={{ mr: 1 }} />
+                      }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  
+                  <Grid item xs={12}>
                     <TextField
-                      label="Role"
-                      name="role"
-                      value={adminData.role}
-                      onChange={handleInputChange}
                       fullWidth
-                      disabled={!isEditing}
+                      label="Role"
+                      value={profile.role}
+                      disabled
                     />
                   </Grid>
+                  
+                  {isEditing && (
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="New Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        InputProps={{
+                          startAdornment: <Lock sx={{ mr: 1 }} />
+                        }}
+                        helperText="Leave blank to keep current password"
+                      />
+                    </Grid>
+                  )}
                 </Grid>
-              </CardContent>
-              <Divider />
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: 2 }}>
-                {isEditing ? (
-                  <Button variant="contained" color="primary" onClick={handleSave} startIcon={<Save />}>
-                    Save Changes
-                  </Button>
-                ) : (
-                  <Button variant="outlined" color="secondary" onClick={toggleEdit}>
-                    Edit
-                  </Button>
+
+                {isEditing && (
+                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button 
+                      variant="contained" 
+                      type="submit"
+                      disabled={loading}
+                      startIcon={<Save />}
+                    >
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </Box>
                 )}
-              </Box>
-            </Card>
+              </form>
+            </Paper>
           </Grid>
         </Grid>
       </Box>
-    </div>
     </>
   );
 };
 
-export default ProfilePage;
+export default AdminProfile;

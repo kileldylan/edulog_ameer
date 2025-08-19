@@ -1,6 +1,24 @@
 const db = require('../config/db');
 
 const Admin = {
+    getAllStudents: (callback) => {
+    db.query(
+      `SELECT 
+        s.student_id,
+        s.name,
+        s.email,
+        s.department,
+        s.year_of_study,
+        c.course_name
+      FROM students s
+      JOIN courses c ON s.course_id = c.course_id
+      ORDER BY s.name`,
+      (err, results) => {
+        if (err) return callback(err);
+        callback(null, results);
+      }
+    );
+  },
   getDashboardStats: (callback) => {
     // Get all stats in parallel
     Promise.all([
@@ -82,6 +100,48 @@ const Admin = {
       });
     })
     .catch(err => callback(err));
+  },
+    getProfile: (userId) => {
+return new Promise((resolve, reject) => {
+    db.query(
+    `SELECT 
+        u.user_id, 
+        u.username AS name, 
+        u.email, 
+        u.role
+        FROM users u
+        WHERE u.user_id = ? AND u.role = 'admin'`,
+    [userId],
+    (err, results) => {
+        if (err) return reject(err);
+        if (results.length === 0) return reject(new Error('Admin not found'));
+        resolve(results[0]);
+    }
+    );
+});
+},
+  updateProfile: (adminId, { email, password }) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let query = 'UPDATE users SET email = ? WHERE user_id = ?';
+        let params = [email, adminId];
+
+        if (password) {
+          const bcrypt = require('bcrypt');
+          const hashedPassword = await bcrypt.hash(password, 10);
+          query = 'UPDATE users SET email = ?, password = ? WHERE user_id = ?';
+          params = [email, hashedPassword, adminId];
+        }
+
+        db.query(query, params, (err, result) => {
+          if (err) return reject(err);
+          if (result.affectedRows === 0) return reject(new Error('No changes made'));
+          resolve(result);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 };
 

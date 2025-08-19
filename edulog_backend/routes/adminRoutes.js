@@ -25,5 +25,8 @@ router.delete('/sessions/:session_id', adminController.deleteSession);
 router.use(verifyToken);
 router.use(verifyAdmin);
 router.get('/dashboard', adminController.getDashboard);
+router.get('/profile', adminController.getProfile);
+router.put('/profile', adminController.updateProfile);
+router.get('/all-students', adminController.getAllStudents);
 
 module.exports = router;

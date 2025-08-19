@@ -34,7 +34,7 @@ const StudentManagement = () => {
 
     const fetchStudents = async () => {
     try {
-        const response = await axiosInstance.get('/student/all-students', {
+        const response = await axiosInstance.get('/admin/all-students', {
         });
 
         if (response.data.success && Array.isArray(response.data.data)) {
@@ -95,7 +95,7 @@ const StudentManagement = () => {
             student_id: '',
             name: '',
             email: '',
-            course: '',
+            course_name: '',
             department: '',
             year_of_study: '',
             total_classes: 0,
@@ -190,7 +190,7 @@ const StudentManagement = () => {
                 student.student_id,
                 student.name,
                 student.email,
-                student.course,
+                student.course_name,
                 student.department,
                 student.year_of_study,
                 student.total_classes,
@@ -274,8 +274,6 @@ const StudentManagement = () => {
                             <TableCell>Course</TableCell>
                             <TableCell>Department</TableCell>
                             <TableCell>Year of Study</TableCell>
-                            <TableCell>Total Classes</TableCell>
-                            <TableCell>Classes Attended</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -286,11 +284,9 @@ const StudentManagement = () => {
                                     <TableCell>{student.student_id}</TableCell>
                                     <TableCell>{student.name}</TableCell>
                                     <TableCell>{student.email}</TableCell>
-                                    <TableCell>{student.course}</TableCell>
+                                    <TableCell>{student.course_name}</TableCell>
                                     <TableCell>{student.department}</TableCell>
                                     <TableCell>{student.year_of_study}</TableCell>
-                                    <TableCell>{student.total_classes}</TableCell>
-                                    <TableCell>{student.classes_attended}</TableCell>
                                     <TableCell>
                                         <IconButton onClick={() => handleOpenDialog(student)} color="primary">
                                             <Edit />

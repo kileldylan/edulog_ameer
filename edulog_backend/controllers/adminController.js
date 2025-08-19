@@ -4,6 +4,41 @@ const Session = require('../models/sessionModel');
 const { validationResult } = require('express-validator');
 const Admin = require('../models/adminModel');
 
+
+const promisify = (method, ...args) => {
+  return new Promise((resolve, reject) => {
+    method(...args, (err, result) => {
+      if (err) {
+        console.error('Database Error:', {
+          method: method.name || 'anonymous',
+          error: err.message,
+          stack: err.stack
+        });
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};
+
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await promisify(Admin.getAllStudents);
+    
+    res.json({
+      success: true,
+      data: students
+    });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch students',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
 exports.getDashboard = async (req, res) => {
   try {
     const dashboardData = await new Promise((resolve, reject) => {
@@ -253,5 +288,67 @@ exports.deleteSession = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getProfile = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const profile = await Admin.getProfile(adminId);
+    
+    res.json({
+      success: true,
+      data: profile
+    });
+  } catch (error) {
+    console.error('Profile Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to load profile'
+    });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { email, password } = req.body;
+
+    // Validate email
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid email address'
+      });
+    }
+
+    // Validate password if provided
+    if (password && password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters'
+      });
+    }
+
+    await Admin.updateProfile(adminId, { email, password });
+    
+    res.json({
+      success: true,
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    console.error('Update Error:', error);
+    
+    if (error.message.includes('Duplicate entry')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email already in use'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update profile'
+    });
   }
 };

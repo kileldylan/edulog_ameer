@@ -6,6 +6,7 @@ import 'react-calendar/dist/Calendar.css'; // Default styling for Calendar
 import { styled } from '@mui/system';
 import axios from 'axios';
 import AppBarComponent from './CustomAppBar';
+import axiosInstance from '../axios/axiosInstance';
 
 const CalendarWrapper = styled('div')({
   display: 'flex',
@@ -48,7 +49,7 @@ const CalendarPage = () => {
         remark: attendanceRemark
       };
 
-      axios.post('/api/attendance/add-remark', newRecord)
+      axiosInstance.post('/attendance/add-remark', newRecord)
         .then(response => {
           setAttendanceData([...attendanceData, response.data]);
           setOpen(false);
