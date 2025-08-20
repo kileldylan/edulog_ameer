@@ -28,5 +28,8 @@ router.get('/dashboard', adminController.getDashboard);
 router.get('/profile', adminController.getProfile);
 router.put('/profile', adminController.updateProfile);
 router.get('/all-students', adminController.getAllStudents);
+router.post('/create', adminController.createStudent);
+router.put('/update/:student_id', adminController.updateStudent);
+router.delete('/delete/:student_id', adminController.deleteStudent);
 
 module.exports = router;

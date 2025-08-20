@@ -12,7 +12,6 @@ router.use(verifyToken);
 router.use(verifyStudent);
 
 router.get('/dashboard', studentController.getDashboard);
-router.get('/all-students', studentController.getAllStudents);
 
 // Sessions
 router.get('/sessions', studentController.getAvailableSessions);

@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Card, CardContent, Grid, 
   Paper, CircularProgress, Button, Chip,
-  Alert, Snackbar
+  Alert
 } from '@mui/material';
 import { 
   Schedule, CalendarToday,
   CheckCircle, EventAvailable
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import StudentNavbar from './studentNavbar';
 import axiosInstance from '../axios/axiosInstance';
 import dayjs from 'dayjs';
@@ -82,8 +81,6 @@ const StudentSessions = () => {
   const [clockInLoading, setClockInLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const navigate = useNavigate();
-
 
   useEffect(() => {
     const fetchSessions = async () => {

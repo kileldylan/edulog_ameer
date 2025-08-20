@@ -39,6 +39,132 @@ exports.getAllStudents = async (req, res) => {
     });
   }
 };
+// Create new student
+exports.createStudent = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+
+  try {
+    const { name, email, course_id, department, year_of_study } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !course_id || !department) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name, email, course, and department are required'
+      });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      Admin.create(req.body, (err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Student created successfully',
+      data: { student_id: result.insertId }
+    });
+  } catch (error) {
+    console.error('Error creating student:', error);
+    
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({
+        success: false,
+        error: 'Email already exists'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create student'
+    });
+  }
+};
+
+// Update student
+exports.updateStudent = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      Admin.update(req.params.student_id, req.body, (err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Student not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Student updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating student:', error);
+    
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({
+        success: false,
+        error: 'Email already exists'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update student'
+    });
+  }
+};
+
+// Delete student
+exports.deleteStudent = async (req, res) => {
+  try {
+    const result = await new Promise((resolve, reject) => {
+      Admin.delete(req.params.student_id, (err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Student not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Student deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete student'
+    });
+  }
+};
+
 exports.getDashboard = async (req, res) => {
   try {
     const dashboardData = await new Promise((resolve, reject) => {
@@ -293,8 +419,15 @@ exports.deleteSession = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const adminId = req.user.id;
+    const adminId = req.user.admin_id;
     const profile = await Admin.getProfile(adminId);
+    
+    if (profile.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'User is not an admin'
+      });
+    }
     
     res.json({
       success: true,
@@ -311,7 +444,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const adminId = req.user.id;
+    const adminId = req.user.admin_id;
     const { email, password } = req.body;
 
     // Validate email

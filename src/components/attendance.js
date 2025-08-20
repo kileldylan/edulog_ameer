@@ -21,7 +21,7 @@ const AttendanceManagement = () => {
 
     const fetchAttendanceRecords = async (student_id) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/attendance/${student_id}`);
+            const response = await axios.get(`http://localhost:5000/api/attendance`);
             if (Array.isArray(response.data)) {
                 setAttendanceRecords(response.data);
             } else {

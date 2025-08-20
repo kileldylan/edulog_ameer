@@ -20,7 +20,7 @@ app.use('/api', authRoutes);
 app.use('/api/student', studentsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/profileRoutes', profileRoutes);
-app.use('/api/reportRoutes', reportRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 
 

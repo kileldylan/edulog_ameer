@@ -72,8 +72,8 @@ const AdminHome = () => {
     }]
   });
 
-  const handleAttendanceManagement = () => navigate('/admin/attendance');
-  const handleGenerateReports = () => navigate('/admin/reports');
+  const handleAttendanceManagement = () => navigate('/attendance');
+  const handleGenerateReports = () => navigate('/reports');
 
   const toggleDrawer = () => {
   setDrawerOpen(!drawerOpen);

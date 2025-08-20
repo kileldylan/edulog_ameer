@@ -19,6 +19,41 @@ const Admin = {
       }
     );
   },
+  // Create new student
+  create: (studentData, callback) => {
+    const { name, email, course_id, department, year_of_study } = studentData;
+    const query = `
+      INSERT INTO students (name, email, course_id, department, year_of_study)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    db.query(query, [name, email, course_id, department, year_of_study], (err, results) => {
+      if (err) return callback(err);
+      callback(null, results);
+    });
+  },
+
+  // Update student
+  update: (student_id, studentData, callback) => {
+    const { name, email, course_id, department, year_of_study } = studentData;
+    const query = `
+      UPDATE students 
+      SET name = ?, email = ?, course_id = ?, department = ?, year_of_study = ?
+      WHERE student_id = ?
+    `;
+    db.query(query, [name, email, course_id, department, year_of_study, student_id], (err, results) => {
+      if (err) return callback(err);
+      callback(null, results);
+    });
+  },
+
+  // Delete student
+  delete: (student_id, callback) => {
+    const query = 'DELETE FROM students WHERE student_id = ?';
+    db.query(query, [student_id], (err, results) => {
+      if (err) return callback(err);
+      callback(null, results);
+    });
+  },
   getDashboardStats: (callback) => {
     // Get all stats in parallel
     Promise.all([
@@ -102,23 +137,30 @@ const Admin = {
     .catch(err => callback(err));
   },
     getProfile: (userId) => {
-return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    console.log('Executing getProfile query with userId:', userId); // Debug log
     db.query(
-    `SELECT 
-        u.user_id, 
-        u.username AS name, 
-        u.email, 
-        u.role
-        FROM users u
-        WHERE u.user_id = ? AND u.role = 'admin'`,
-    [userId],
-    (err, results) => {
-        if (err) return reject(err);
-        if (results.length === 0) return reject(new Error('Admin not found'));
+      `SELECT 
+         u.user_id, 
+         u.username AS name, 
+         u.email, 
+         u.role
+       FROM users u
+       WHERE u.user_id = ?`,
+      [userId],
+      (err, results) => {
+        if (err) {
+          console.error('Database error in getProfile:', err);
+          return reject(err);
+        }
+        console.log('Query results:', results); // Debug log
+        if (results.length === 0) {
+          return reject(new Error('User not found'));
+        }
         resolve(results[0]);
-    }
+      }
     );
-});
+  });
 },
   updateProfile: (adminId, { email, password }) => {
     return new Promise(async (resolve, reject) => {
